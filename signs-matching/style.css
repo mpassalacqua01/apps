@@ -1,0 +1,190 @@
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --accent: #22d3ee;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --ok: #10b981;
+  --bad: #ef4444;
+  --card-min: 110px;
+  --card-ideal: 22vw;
+  --card-max: 200px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+  background: radial-gradient(1000px 600px at 0% 0%, #0b1024 0%, var(--bg) 50%) fixed;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.0));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.topbar h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+.controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: rgba(255,255,255,0.2); }
+
+main { padding: 16px; }
+
+.board {
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(clamp(var(--card-min), var(--card-ideal), var(--card-max)), 1fr)
+  );
+  max-width: 1200px;
+  /* Ensure 3D flips render across browsers */
+  perspective: 1000px;
+}
+
+.card {
+  aspect-ratio: 3 / 4;
+  /* Fallback height if aspect-ratio unsupported */
+  min-height: 160px;
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+  transform-style: preserve-3d;
+  transition: border-color 200ms;
+}
+.card.revealed { /* wrapper has no own rotation; inner handles flip */ }
+
+/* 3D flip inner wrapper */
+.inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: none;
+}
+.card.revealed .inner { transform: rotateY(180deg); animation: flip-spring 650ms cubic-bezier(.2,.8,.2,1) both; }
+.card.match { outline: 2px solid var(--ok); border-color: rgba(16,185,129,0.4); }
+.card.fail { outline: 2px solid var(--bad); border-color: rgba(239,68,68,0.4); }
+
+.face {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.front {
+  padding: 8px;
+  transform: rotateY(180deg);
+}
+.back {
+  background: linear-gradient(135deg, rgba(34,211,238,0.1) 0%, rgba(34,211,238,0.0) 60%);
+  transform: rotateY(0deg);
+}
+
+/* 3D handles face visibility via backface-visibility */
+
+/* Lift/shadow accents */
+.card { will-change: transform; }
+.card:hover { transform: translateY(-2px); }
+.card.revealed { border-color: rgba(34,211,238,0.35); box-shadow: 0 14px 28px rgba(0,0,0,0.35); }
+
+/* Flip spring animation closer to example */
+@keyframes flip-spring {
+  0% { transform: rotateY(0deg); }
+  55% { transform: rotateY(200deg); }
+  100% { transform: rotateY(180deg); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .inner { transition: none !important; animation: none !important; }
+}
+
+.label {
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text);
+  font-size: clamp(12px, 1.4vw, 16px);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.img {
+  width: 100%; height: 100%;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+}
+
+.footer {
+  padding: 12px 16px; color: var(--muted);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+@media (min-width: 920px) {
+  .topbar h1 { font-size: 20px; }
+}
+.medals { display: inline-flex; align-items: center; gap: 12px; margin-left: 8px; }
+.medal { width: 72px; height: 72px; display: inline-flex; align-items: center; justify-content: center; filter: grayscale(100%) opacity(0.5); }
+.medal.earned { filter: none; }
+.medal img { width: 64px; height: 64px; display: block; }
+.wins { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+/* Overlay for achievements */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: grid; place-items: center; z-index: 100; }
+.overlay[hidden] { display: none !important; }
+.sheet { width: min(680px, 92vw); background: #0b1228; color: var(--text); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.ach-list { padding: 12px 14px; display: grid; gap: 12px; }
+.ach { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; }
+.ach .icon { width: 72px; height: 72px; display: grid; place-items: center; }
+.ach .icon img { width: 64px; height: 64px; }
+.ach .meta { display: grid; gap: 4px; }
+.ach .title { font-weight: 700; }
+.ach .desc { color: var(--muted); font-size: 0.95rem; }
+.ach .date { color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 600px) {
+  :root { --card-ideal: 28vw; --card-max: 140px; }
+  .board { gap: 6px; }
+  .card { min-height: 100px; }
+}
+@media (min-width: 1200px) {
+  :root { --card-ideal: 18vw; --card-max: 240px; }
+}
+
+/* Toast notifications */
+#toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: rgba(0,0,0,0.8); color: white; padding: 10px 14px; border-radius: 8px;
+  display: none; align-items: center; gap: 8px; z-index: 200;
+}
+#toast.show { display: inline-flex; animation: toast-in 200ms ease-out; }
+#toast img { width: 20px; height: 20px; }
+@keyframes toast-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+
+/* Subtle flip animation without relying on 3D face transforms */
+@keyframes flip-lite {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(12deg) scale(0.98); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
