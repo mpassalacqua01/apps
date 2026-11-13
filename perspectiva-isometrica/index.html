@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la f de la ficha de perspectiva isométrica de 3.º de ESO.">
+<title>De las vistas a la pieza · 3.º ESO</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink:#18273c; --muted:#4f6077; --line:#dce3eb; --navy:#14243c;
+    --paper:#fff; --bg:#f0f3f7; --blue:#2155b4; --accent:#95ead8;
+    font: 16px/1.45 Inter, system-ui, sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); }
+  button { font:inherit; cursor:pointer; color:inherit; }
+  button:focus-visible, canvas:focus-visible, a:focus-visible {
+    outline:3px solid #2175d1; outline-offset:3px;
+  }
+  button:disabled { opacity:.45; cursor:default; }
+  .wrap { width:min(1180px,calc(100% - 56px)); margin-inline:auto; }
+  header { background:var(--navy); color:white; padding:26px 0 49px; }
+  .subject { margin:0 0 5px; color:var(--accent); font-weight:750; font-size:.82rem; letter-spacing:.065em; }
+  h1 { margin:0; font-size:clamp(2rem,5.1vw,3.65rem); letter-spacing:-.05em; line-height:1.08; }
+  header p:last-child { margin:8px 0 0; color:#c9d8ec; font-size:1.03rem; }
+  main.wrap { margin-top:-23px; }
+  .exercise-bar {
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 15px;
+    background:var(--paper); border:1px solid var(--line); border-radius:15px;
+    box-shadow:0 5px 18px #14243c09;
+  }
+  .exercise-bar strong { margin-right:5px; font-size:.87rem; }
+  .exercise {
+    min-width:44px; min-height:37px; background:#f2f5fa; border:1px solid transparent;
+    border-radius:8px; font-weight:750; font-size:1.03rem;
+  }
+  .exercise:hover { background:#e2eafa; }
+  .exercise[aria-pressed="true"] { background:#deebff; color:#173f8a; border-color:#b2c9ef; }
+  .workspace { display:grid; grid-template-columns:minmax(292px,.76fr) minmax(0,1.45fr); gap:15px; margin-top:15px; align-items:start; }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:15px; overflow:hidden; }
+  .views { padding:20px; }
+  h2 { font-size:1.07rem; letter-spacing:-.01em; margin:0; }
+  .hint { font-size:.86rem; color:var(--muted); margin:4px 0 14px; }
+  .view-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .view { min-width:0; padding:8px 6px 9px; border:1px solid var(--line); border-radius:10px; background:#fbfcfe; }
+  .view[data-view="front"] { --view:#2451a3; --tint:#eaf1ff; --view-border:#aac3ee; }
+  .view[data-view="left"] { --view:#9a410e; --tint:#fff1e7; --view-border:#e8ba99; }
+  .view[data-view="top"] { --view:#11705e; --tint:#e5f5ef; --view-border:#a3d8ca; }
+  .view:hover, .view.current, .view[aria-pressed="true"] { border-color:var(--view-border); background:var(--tint); }
+  .view[aria-pressed="true"] { box-shadow:inset 0 0 0 1px var(--view-border); }
+  .view canvas { width:min(100%,110px); aspect-ratio:1; display:block; margin:0 auto 4px; }
+  .view:disabled { opacity:1; }
+  .view.current span { text-decoration:underline; text-underline-offset:3px; }
+  .view:disabled:hover:not(.current) { border-color:var(--line); background:#fbfcfe; }
+  .view span { display:block; color:var(--view); font-weight:760; font-size:.8rem; }
+  .legend { margin:13px 0 0; font-size:.77rem; color:var(--muted); }
+  .legend b { color:var(--ink); }
+  .viewer { min-width:0; }
+  .viewer-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; min-height:59px; padding:13px 17px; border-bottom:1px solid var(--line); }
+  .secondary { padding:6px 10px; font-size:.8rem; font-weight:700; border:1px solid var(--line); border-radius:7px; background:#fff; }
+  .secondary:hover { background:#eef4fc; }
+  .move-key { display:flex; gap:6px 13px; flex-wrap:wrap; font-size:.78rem; color:var(--ink); }
+  .move-key span { display:inline-flex; align-items:center; gap:5px; }
+  .move-key span::before { content:""; width:19px; border-top:3px solid var(--move-color); }
+  .move-key span:last-child::before { border-top-style:dashed; }
+  .scene { position:relative; background:#edf3fa; }
+  #model { width:100%; height:clamp(260px,33vw,405px); display:block; touch-action:pan-y; cursor:default; }
+  #model.interactive { cursor:grab; touch-action:none; }
+  #model.dragging { cursor:grabbing; touch-action:none; }
+  [hidden] { display:none !important; }
+  .scene-help { position:absolute; left:12px; bottom:9px; color:#42546d; font-size:.74rem; pointer-events:none; background:#f5f8fcdb; border-radius:5px; padding:2px 6px; }
+  .lesson { padding:13px 17px 15px; }
+  .steps { display:grid; grid-template-columns:repeat(var(--steps,4),minmax(0,1fr)); gap:6px; }
+  .step { min-height:38px; padding:4px; border:1px solid var(--line); border-radius:7px; background:#fff; color:#45546a; font-size:.81rem; font-weight:690; }
+  .step:hover { background:#f1f5fc; }
+  .step[aria-current="step"] { border-color:#9eb9e6; background:#eaf1ff; color:#173f8a; }
+  .instruction { min-height:88px; padding:11px 0 9px; }
+  .instruction strong { font-size:.99rem; }
+  .instruction p { margin:3px 0 0; font-size:.89rem; color:var(--muted); }
+  .controls { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+  .controls > div { display:flex; gap:7px; }
+  .control { border:1px solid var(--line); border-radius:8px; background:#fff; font-weight:710; font-size:.84rem; padding:7px 11px; min-height:36px; }
+  .control:hover:not(:disabled) { background:#f1f5fc; }
+  .move-action { background:#eaf1ff; color:#173f8a; border-color:#b2c9ef; }
+  .move-action[aria-disabled="true"] { opacity:.6; cursor:default; }
+  .primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .primary:hover:not(:disabled) { background:#174697; }
+  footer { padding:14px 0 20px; color:var(--muted); font-size:.77rem; }
+  footer a { color:#354e74; text-underline-offset:2px; }
+  @media (max-width:900px) {
+    .steps { grid-template-columns:repeat(min(var(--steps,4),4),minmax(0,1fr)); }
+  }
+  @media (max-width:730px) {
+    .wrap { width:calc(100% - 20px); }
+    header { padding:16px 0 36px; }
+    header p:last-child { font-size:.89rem; }
+    main.wrap { margin-top:-19px; }
+    .exercise-bar { padding:7px 10px; gap:5px; }
+    .exercise { min-height:44px; }
+    .workspace { grid-template-columns:1fr; gap:8px; margin-top:8px; }
+    .views { padding:8px 10px; }
+    .views h2 { font-size:.95rem; }
+    .hint { margin:2px 0 6px; font-size:.76rem; }
+    .view-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .view { padding:4px; }
+    .view span { font-size:.73rem; }
+    .view canvas { width:min(100%,70px); margin-bottom:2px; }
+    .legend { display:none; }
+    .viewer-head { min-height:44px; padding:6px 10px; }
+    .viewer-head h2 { font-size:.95rem; }
+    .move-key { font-size:.7rem; gap:5px 8px; }
+    .move-key span::before { width:13px; }
+    #model { height:clamp(190px,62vw,340px); }
+    .lesson { padding:8px 10px 10px; display:flex; flex-direction:column; }
+    .steps { order:3; margin-top:9px; }
+    .step { min-height:44px; font-size:.75rem; overflow-wrap:anywhere; }
+    .instruction { min-height:0; padding:2px 0 9px; }
+    .instruction p { font-size:.85rem; }
+    .controls { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+    .controls > div { justify-content:space-between; }
+    .controls .control { min-height:44px; padding-inline:7px; font-size:.78rem; }
+    .secondary { min-height:44px; }
+  }
+  @media (max-width:420px) {
+    .exercise-bar strong { width:100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <p class="subject">TECNOLOGÍA Y DIGITALIZACIÓN · 3.º ESO</p>
+    <h1>De las vistas a la pieza</h1>
+    <p>Sigue las líneas del alzado y del perfil hasta completar la pieza.</p>
+  </div>
+</header>
+<main class="wrap">
+  <nav class="exercise-bar" aria-label="Ejercicios de la ficha">
+    <strong>Ejercicio de la ficha</strong>
+    <button class="exercise" type="button" data-exercise="a" aria-label="Ejercicio a" aria-pressed="true">a</button>
+    <button class="exercise" type="button" data-exercise="b" aria-label="Ejercicio b" aria-pressed="false">b</button>
+    <button class="exercise" type="button" data-exercise="c" aria-label="Ejercicio c" aria-pressed="false">c</button>
+    <button class="exercise" type="button" data-exercise="d" aria-label="Ejercicio d" aria-pressed="false">d</button>
+    <button class="exercise" type="button" data-exercise="e" aria-label="Ejercicio e" aria-pressed="false">e</button>
+    <button class="exercise" type="button" data-exercise="f" aria-label="Ejercicio f" aria-pressed="false">f</button>
+  </nav>
+  <div class="workspace">
+    <section class="panel views" aria-labelledby="views-title">
+      <h2 id="views-title">Vistas de la ficha</h2>
+      <p class="hint">El azul señala el alzado y el naranja, el perfil. Consulta la planta para situar los escalones.</p>
+      <div class="view-grid">
+        <button type="button" class="view" data-view="front" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Alzado</span></button>
+        <button type="button" class="view" data-view="left" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Perfil izquierdo</span></button>
+        <button type="button" class="view current" data-view="top" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Planta</span></button>
+      </div>
+      <p class="legend"><b>Línea continua</b> · Arista visible<br><b>Línea punteada</b> · Cuadrícula de apoyo</p>
+    </section>
+    <section class="panel viewer" aria-labelledby="model-title">
+      <div class="viewer-head">
+        <h2 id="model-title">Plantilla isométrica</h2>
+        <div class="move-key" id="move-key" hidden><span>Aristas que se mueven</span><span>Destino</span></div>
+        <button class="secondary" id="isometric" type="button" hidden>Vista isométrica</button>
+      </div>
+      <div class="scene">
+        <canvas id="model" tabindex="0" role="img" aria-label="Trazado de la pieza sobre la plantilla isométrica."></canvas>
+        <div class="scene-help" hidden>Desliza el dedo o arrastra para girar</div>
+      </div>
+      <div class="lesson">
+        <nav class="steps" aria-label="Pasos de dibujo"></nav>
+        <div class="instruction" aria-live="polite">
+          <strong id="instruction-title"></strong>
+          <p id="instruction-text"></p>
+        </div>
+        <div class="controls">
+          <div><button type="button" class="control move-action" id="move-action" hidden>Mover aristas</button><button type="button" class="control" id="replay">↻ Repetir paso</button><button type="button" class="control" id="play">▶︎ Animar todo</button></div>
+          <div>
+            <button type="button" class="control" id="previous" disabled>Anterior</button>
+            <button type="button" class="control primary" id="next">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <footer>Método y ejercicios adaptados de Carlos Félix Pardo Martín (Picuino) · <a href="https://www.picuino.com/es/dibujo-isometrica-pieza-01.html" target="_blank" rel="noopener noreferrer">Pieza 1</a> · <a href="https://www.picuino.com/es/dibujo-isometrica-pieza-02.html" target="_blank" rel="noopener noreferrer">Pieza 2</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></footer>
+</main>
+<script>
+"use strict";
+
+// Cada fila recorre el ancho de izquierda a derecha, desde delante hacia el fondo.
+const exercises = {
+  a: [[1,1,3], [1,1,3], [1,1,3]],
+  b: [[1,1,2], [1,1,2], [3,3,3]],
+  c: [[1,2,2], [1,2,3], [2,2,3]],
+  d: [[0,0,1], [0,0,2], [1,2,3]],
+  e: [[0,1,1], [1,1,2], [1,1,3]],
+  f: [[0,0,2], [0,0,2], [0,3,3]]
+};
+
+const first = ["Copiar", "Copia el alzado y el perfil en la plantilla",
+  "El alzado (azul) va en la cara derecha y el perfil izquierdo (naranja) en la izquierda. Mantén verticales las alturas. Sigue las diagonales para el ancho y el fondo."];
+const corners = ["Trazar", "Saca líneas cortas desde los vértices",
+  "Las líneas moradas arrancan en los vértices. Sigue las direcciones de la cuadrícula y dibuja solo las aristas que quedarán a la vista."];
+const finish = ["Cerrar", "Prolonga las aristas hasta unirlas",
+  "Prolonga las líneas moradas hasta que encuentren la arista correspondiente. Pulsa «Ver en 3D» para girar la pieza y comprobar sus vistas."];
+const moves = {
+  a: [
+    ["Perfil superior", "Coloca el rectángulo del perfil",
+      "Sigue las líneas naranjas del perfil. Desplaza el rectángulo dos casillas hacia la derecha, hasta que su arista vertical coincida con la del alzado.", "left", 2]
+  ],
+  b: [
+    ["Alzado superior", "Lleva las aristas del muro al fondo",
+      "Sigue las líneas azules del alzado. Desplázalas dos casillas hacia el fondo. En la planta, el muro ocupa la última fila.", "front", 2, true],
+    ["Perfil del escalón", "Coloca las aristas del escalón",
+      "Sigue las líneas naranjas del perfil. Desplázalas dos casillas hacia la derecha. En la planta, el escalón empieza en la tercera columna.", "left", 2, false]
+  ],
+  c: [
+    ["Perfil superior", "Coloca el rectángulo superior del perfil",
+      "Sigue el rectángulo naranja del perfil. Desplázalo dos casillas hacia la derecha, hasta el borde de la tercera columna.", "left", 2, true],
+    ["Alzado superior", "Une el cuadrado superior al rectángulo",
+      "Sigue el cuadrado azul del alzado. Desplázalo una casilla hacia el fondo, hasta que su arista vertical coincida con la del rectángulo ya colocado.", "front", 1, true],
+    ["Alzado del rebaje", "Lleva las aristas azules al fondo del rebaje",
+      "Sigue el cuadrado azul del alzado. Desplázalo dos casillas hacia el fondo. La planta muestra que el rebaje ocupa las dos filas delanteras.", "front", 2, false],
+    ["Perfil del rebaje", "Cierra la esquina interior del rebaje",
+      "Sigue el rectángulo naranja del perfil. Desplázalo una casilla hacia la derecha, hasta que su arista vertical coincida con la del cuadrado ya colocado.", "left", 1, false]
+  ],
+  d: [
+    ["Alzado del fondo", "Lleva el alzado hasta el brazo del fondo",
+      "La línea verde recorre todo el ancho. Lleva las aristas azules dos casillas hacia el fondo.", "front", 2],
+    ["Perfil del brazo", "Coloca el perfil en el brazo de la derecha",
+      "La línea verde recorre toda la profundidad. Lleva las aristas naranjas dos casillas hacia la derecha.", "left", 2],
+    ["Alzado del escalón", "Coloca el escalón del brazo derecho",
+      "Sigue el tramo horizontal corto de la planta. Mueve el cuadrado azul una casilla hacia el fondo.", "front", 1],
+    ["Perfil del escalón", "Coloca el escalón del brazo del fondo",
+      "Sigue el tramo vertical corto de la planta. Mueve el cuadrado naranja una casilla hacia la derecha.", "left", 1]
+  ],
+  e: [
+    ["Alzado superior", "Coloca el frente del escalón más alto",
+      "La línea verde está al fondo de la tercera columna. Mueve el cuadrado azul dos casillas hacia el fondo.", "front", 2],
+    ["Perfil de los escalones", "Coloca el lateral de los dos escalones",
+      "La línea verde recorre la tercera columna por el lado interior. Mueve el perfil naranja dos casillas hacia la derecha.", "left", 2],
+    ["Alzado del escalón", "Coloca el frente del escalón intermedio",
+      "El tramo verde atraviesa la tercera columna. Lleva el cuadrado azul una casilla hacia el fondo.", "front", 1, undefined, [2,3]],
+    ["Alzado de la base", "Sitúa el entrante de la base",
+      "El tramo verde está en la primera columna. Lleva el cuadrado azul de la base una casilla hacia el fondo.", "front", 1, undefined, [0,1]],
+    ["Perfil de la base", "Une los lados del entrante",
+      "El tramo verde señala el lateral del hueco delantero. Mueve el cuadrado naranja una casilla hacia la derecha.", "left", 1]
+  ],
+  f: [
+    ["Alzado del fondo", "Lleva el alzado al fondo de la pieza",
+      "El tramo verde abarca las dos columnas ocupadas del fondo. Desplaza las aristas azules dos casillas hacia el fondo.", "front", 2],
+    ["Perfil alto", "Coloca el lateral del bloque alto",
+      "El tramo verde señala el borde exterior de la fila del fondo. Desplaza el rectángulo naranja una casilla hacia la derecha.", "left", 1],
+    ["Perfil bajo", "Coloca el lateral del brazo bajo",
+      "El tramo verde recorre las dos casillas delanteras. Mueve el rectángulo naranja dos casillas hacia la derecha.", "left", 2]
+  ]
+};
+const lessons = Object.fromEntries(Object.entries(moves).map(([key, list]) => [key, [first, ...list, corners, finish]]));
+const colors = {front:"#2451a3", left:"#9a410e", top:"#11705e", added:"#733ea1", edge:"#233956"};
+const iso = [-Math.PI / 4, Math.atan(1 / Math.sqrt(2))];
+const angles = {front:[0,0], left:[-Math.PI/2,0], top:[0,Math.PI/2]};
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const canvas = document.querySelector("#model");
+const ctx = canvas.getContext("2d");
+const exerciseButtons = [...document.querySelectorAll(".exercise")];
+const viewButtons = [...document.querySelectorAll(".view")];
+const steps = document.querySelector(".steps");
+const previous = document.querySelector("#previous");
+const next = document.querySelector("#next");
+const play = document.querySelector("#play");
+const replay = document.querySelector("#replay");
+const modelToggle = document.querySelector("#isometric");
+const help = document.querySelector(".scene-help");
+const title = document.querySelector("#model-title");
+const moveKey = document.querySelector("#move-key");
+const moveAction = document.querySelector("#move-action");
+const currentMove = () => moves[exercise][step-1];
+const movePreview = 1850;
+const moveDuration = 1650;
+const lastStep = () => lessons[exercise].length - 1;
+let modelMode = false;
+let drawingStart = null;
+let moveReady = false;
+let exercise = "a";
+let step = 0;
+let timer = null;
+let paused = false;
+let camera = [...iso];
+let cameraMove;
+let selectedView = null;
+let frame;
+let drag;
+
+function solidCells(key) {
+  const cells = new Map();
+  exercises[key].forEach((row, y) => row.forEach((height, x) => {
+    for (let z = 0; z < height; z++) cells.set([x,y,z].join(), [x,y,z]);
+  }));
+  return cells;
+}
+
+function viewDepth(key, direction) {
+  const heights = exercises[key];
+  return Array.from({length:3}, (_, row) => Array.from({length:3}, (_, col) => {
+    if (direction === "top") return heights[2-row][col] || -1;
+    const z = 2 - row;
+    if (direction === "front") return heights.findIndex(line => line[col] > z);
+    return heights[2-col].findIndex(height => height > z);
+  }));
+}
+
+function drawView(button, move) {
+  const surface = button.querySelector("canvas");
+  const pen = surface.getContext("2d");
+  const offset = 14;
+  const size = 64;
+  const direction = button.dataset.view;
+  const data = viewDepth(exercise, direction);
+  const color = colors[direction];
+  pen.clearRect(0,0,220,220);
+  pen.strokeStyle = "#8190a3";
+  pen.lineWidth = 1.6;
+  pen.setLineDash([3,6]);
+  pen.beginPath();
+  for (let i = 0; i <= 3; i++) {
+    const p = offset+i*size;
+    pen.moveTo(offset,p); pen.lineTo(206,p);
+    pen.moveTo(p,offset); pen.lineTo(p,206);
+  }
+  pen.stroke();
+  pen.setLineDash([]);
+  pen.strokeStyle = move ? "#8c99aa" : color;
+  pen.lineWidth = 4;
+  pen.lineCap = "round";
+  pen.beginPath();
+  for (let i = 0; i <= 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const p = offset+i*size;
+      const q = offset+j*size;
+      if ((data[j][i] ?? -1) !== (data[j][i-1] ?? -1)) {
+        pen.moveTo(p,q); pen.lineTo(p,q+size);
+      }
+      if ((data[i]?.[j] ?? -1) !== (data[i-1]?.[j] ?? -1)) {
+        pen.moveTo(q,p); pen.lineTo(q+size,p);
+      }
+    }
+  }
+  pen.stroke();
+  if (!move || (direction !== "top" && move[3] !== direction)) return;
+  const active = drawings[exercise].groups.get(move);
+  const highlights = direction === "top" ? [planReference(active)] : active.map(segment => segment.source);
+  pen.strokeStyle = color;
+  pen.lineWidth = 9;
+  pen.lineJoin = "round";
+  pen.beginPath();
+  for (const [[u1,v1],[u2,v2]] of highlights) {
+    pen.moveTo(offset+u1*size,offset+(3-v1)*size);
+    pen.lineTo(offset+u2*size,offset+(3-v2)*size);
+  }
+  pen.stroke();
+}
+
+function updateUI() {
+  exerciseButtons.forEach(button => button.setAttribute("aria-pressed", button.dataset.exercise === exercise));
+  steps.style.setProperty("--steps", lessons[exercise].length);
+  const stepLabels = lessons[exercise].map(([label]) => label);
+  const move = modelMode ? undefined : currentMove();
+  if (steps.dataset.exercise !== exercise) {
+    steps.dataset.exercise = exercise;
+    steps.replaceChildren(...stepLabels.map((label, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "step";
+      button.textContent = label;
+      button.addEventListener("click", () => { stop(); setStep(index); });
+      return button;
+    }));
+  }
+  [...steps.children].forEach((button,index) => {
+    if (index === step) button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
+  });
+  viewButtons.forEach(button => {
+    const view = button.dataset.view;
+    const reference = move && view === "top";
+    button.disabled = !modelMode;
+    button.classList.toggle("current", Boolean(reference) || move?.[3] === view || (!modelMode && step === 0 && view !== "top"));
+    if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
+    else button.removeAttribute("aria-label");
+    drawView(button, move);
+  });
+  const [, heading, instruction] = lessons[exercise][step];
+  document.querySelector("#instruction-title").textContent = heading;
+  document.querySelector("#instruction-text").textContent = instruction;
+  previous.disabled = step === 0;
+  next.disabled = step === lastStep();
+  replay.disabled = modelMode;
+  modelToggle.hidden = step !== lastStep();
+  moveKey.hidden = !move;
+  if (move) moveKey.style.setProperty("--move-color", colors[move[3]]);
+  updateMoveAction();
+  modelToggle.textContent = modelMode ? "Volver al dibujo" : "Ver en 3D";
+  help.hidden = !modelMode;
+  title.textContent = modelMode ? "Pieza en 3D" : "Plantilla isométrica";
+  document.querySelector(".hint").textContent = modelMode
+    ? "Pulsa una vista para mirar la pieza desde esa dirección."
+    : move
+      ? "Las aristas que se mueven están en azul o naranja. El trazo verde de la planta marca dónde colocarlas."
+      : "El azul señala el alzado y el naranja, el perfil. Consulta la planta para situar los escalones.";
+  canvas.classList.toggle("interactive", modelMode);
+  canvas.tabIndex = modelMode ? 0 : -1;
+  canvas.setAttribute("aria-label", modelMode
+    ? `Pieza ${exercise}. Arrastra o usa las flechas para girarla.`
+    : `Ejercicio ${exercise}, paso ${step+1}. ${heading}`);
+}
+
+function updateMoveAction() {
+  const move = !modelMode && currentMove();
+  const moving = move && !moveReady && drawingStart !== null;
+  moveAction.hidden = !move;
+  moveAction.setAttribute("aria-disabled", Boolean(moving));
+  moveAction.textContent = moveReady ? "Mover aristas" : moving ? "Moviendo aristas…" : "Ver origen y destino";
+  moveKey.lastElementChild.hidden = !moveReady && !moving;
+}
+
+function setStep(value, animateMove = false) {
+  step = value;
+  modelMode = false;
+  cameraMove = undefined;
+  selectView(null);
+  moveReady = Boolean(currentMove()) && !animateMove;
+  drawingStart = moveReady ? null : performance.now();
+  updateUI();
+  schedule();
+}
+
+function selectView(view) {
+  selectedView = view;
+  viewButtons.forEach(button => button.setAttribute("aria-pressed", button.dataset.view === view));
+}
+
+function setCamera(target, view = null) {
+  selectView(view);
+  const delta = Math.atan2(Math.sin(target[0]-camera[0]), Math.cos(target[0]-camera[0]));
+  cameraMove = {from:[...camera], to:[camera[0]+delta,target[1]], start:performance.now()};
+  schedule();
+}
+
+function stop() {
+  clearTimeout(timer);
+  timer = null;
+  paused = false;
+  play.textContent = "▶︎ Animar todo";
+}
+
+function autoStep() {
+  setStep(step+1,true);
+  timer = setTimeout(step === lastStep() ? stop : autoStep, 5400);
+}
+
+exerciseButtons.forEach(button => button.addEventListener("click", () => {
+  stop();
+  exercise = button.dataset.exercise;
+  setStep(0);
+}));
+viewButtons.forEach(button => button.addEventListener("click", () => setCamera(angles[button.dataset.view], button.dataset.view)));
+modelToggle.addEventListener("click", () => {
+  stop();
+  modelMode = !modelMode;
+  camera = [...iso];
+  cameraMove = undefined;
+  selectView(null);
+  drawingStart = null;
+  updateUI();
+  schedule();
+});
+previous.addEventListener("click", () => { stop(); setStep(step-1); });
+next.addEventListener("click", () => { stop(); setStep(step+1); });
+replay.addEventListener("click", () => { stop(); setStep(step,true); });
+moveAction.addEventListener("click", () => {
+  if (moveAction.getAttribute("aria-disabled") === "true") return;
+  stop();
+  if (moveReady) {
+    moveReady = false;
+    drawingStart = performance.now()-movePreview;
+    updateMoveAction();
+    schedule();
+  } else {
+    setStep(step);
+  }
+});
+play.addEventListener("click", () => {
+  if (timer !== null) {
+    clearTimeout(timer);
+    timer = null;
+    paused = true;
+    play.textContent = "▶︎ Continuar";
+    return;
+  }
+  if (!paused || step === lastStep()) setStep(0);
+  paused = false;
+  play.textContent = "❚❚ Pausar";
+  timer = setTimeout(autoStep, 5400);
+});
+
+function schedule() {
+  if (frame === undefined) frame = requestAnimationFrame(render);
+}
+const ease = value => 1 - Math.pow(1-value, 3);
+const progress = (now, start, ms) => reduceMotion.matches ? 1 : Math.max(0, Math.min(1, (now-start)/ms));
+
+const faces = [
+  {n:[-1,0,0], p:[[0,0,0],[0,1,0],[0,1,1],[0,0,1]], shade:1},
+  {n:[1,0,0], p:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], shade:1},
+  {n:[0,-1,0], p:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]], shade:2},
+  {n:[0,1,0], p:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]], shade:2},
+  {n:[0,0,1], p:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]], shade:0},
+  {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], shade:1}
+];
+const palette = ["#99daf0","#56a8d8","#397fb4"];
+const dot = (a,b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const interpolate = (a,b,t) => a.map((v,i) => v+(b[i]-v)*t);
+const offset = (a,b) => a.map((v,i) => v+b[i]);
+
+function projectedFaces(key, eye) {
+  const cells = solidCells(key);
+  const result = [];
+  for (const origin of cells.values()) {
+    for (const face of faces) {
+      if (dot(face.n,eye) <= .00001) continue;
+      if (cells.has(offset(origin,face.n).join())) continue;
+      const points = face.p.map(point => offset(point,origin));
+      const edges = face.p.flatMap((point,index) => {
+        const end = face.p[(index+1)%4];
+        const side = point.map((v,i) => end[i]===v && face.n[i]===0 ? (v===0 ? -1 : 1) : 0);
+        const adjacent = offset(origin,side);
+        return !cells.has(adjacent.join()) || cells.has(offset(adjacent,face.n).join())
+          ? [[points[index],points[(index+1)%4]]] : [];
+      });
+      result.push({points, edges, depth:dot(interpolate(points[0],points[2],.5),eye), fill:palette[face.shade]});
+    }
+  }
+  return result.sort((a,b) => a.depth-b.depth);
+}
+
+function lineKey([a,b]) {
+  return [a.join(),b.join()].sort().join("|");
+}
+
+// Each boundary retains the depth of the face seen in the corresponding orthographic view.
+function projectionEdges(key, direction) {
+  const data = viewDepth(key,direction);
+  const segments = [];
+  data.forEach((row,r) => row.forEach((depth,c) => {
+    if (depth < 0) return;
+    const z = 3-r;
+    const local = [[c,z],[c+1,z],[c+1,z-1],[c,z-1]];
+    const neighbors = [data[r-1]?.[c], row[c+1], data[r+1]?.[c], row[c-1]];
+    for (let i = 0; i < 4; i++) {
+      if (neighbors[i] === depth) continue;
+      const points = [local[i], local[(i+1)%4]];
+      const lift = ([u,h], d) => direction === "front" ? [u,d,h] : [d,3-u,h];
+      const from = points.map(point => lift(point,0));
+      const to = points.map(point => lift(point,depth));
+      const upper = z === 3 || (key === "b" && direction === "front" && depth === 2);
+      segments.push({direction, from, to, depth, upper, source:points});
+    }
+  }));
+  return segments;
+}
+
+// The vertical face at the destination projects to a line in plan.
+function planReference(segments) {
+  const {direction,depth} = segments[0];
+  const axis = direction === "front" ? 0 : 1;
+  const positions = segments.flatMap(({to}) => to.map(point => point[axis]));
+  return [Math.min(...positions),Math.max(...positions)]
+    .map(position => direction === "front" ? [position,depth] : [depth,position]);
+}
+
+// Join adjacent unit edges so each new pencil stroke starts at a corner.
+function mergeEdges(edges) {
+  const groups = new Map();
+  for (const [a,b] of edges) {
+    const axis = a.findIndex((v,i) => v !== b[i]);
+    const key = a.map((v,i) => i === axis ? "*" : v).join();
+    const group = groups.get(key) ?? {axis, point:a, ranges:[]};
+    group.ranges.push([Math.min(a[axis],b[axis]),Math.max(a[axis],b[axis])]);
+    groups.set(key,group);
+  }
+  return [...groups.values()].flatMap(({axis,point,ranges}) => {
+    const merged = [];
+    for (const range of ranges.sort((a,b) => a[0]-b[0])) {
+      const prev = merged.at(-1);
+      if (prev?.[1] === range[0]) prev[1] = range[1];
+      else merged.push(range);
+    }
+    return merged.map(range => range.map(end => point.map((v,i) => i === axis ? end : v)));
+  });
+}
+
+const drawings = Object.fromEntries(Object.keys(exercises).map(key => {
+  const projections = ["front","left"].flatMap(direction => projectionEdges(key,direction));
+  const groups = new Map(moves[key].map(move => {
+    const [,,,direction,depth,upper,span] = move;
+    return [move, projections.filter(segment =>
+      segment.direction === direction && segment.depth === depth &&
+      (upper === undefined || segment.upper === upper) &&
+      (!span || segment.source.every(([u]) => u >= span[0] && u <= span[1])))];
+  }));
+  const placed = new Set(projections.map(({to}) => lineKey(to)));
+  const outline = new Map(projectedFaces(key,[-1,-1,1]).flatMap(face => face.edges).map(edge => [lineKey(edge),edge]));
+  const retained = new Map([...outline].filter(([edge]) => placed.has(edge)));
+  const anchored = new Set([...retained.values()].flat().map(point => point.join()));
+  const missing = mergeEdges([...outline].filter(([edge]) => !placed.has(edge)).map(([,edge]) => edge))
+    .map(([a,b]) => anchored.has(a.join()) || !anchored.has(b.join()) ? [a,b] : [b,a]);
+  return [key,{projections, groups, retained, missing}];
+}));
+
+function stroke(a,b) {
+  ctx.moveTo(...a);
+  ctx.lineTo(...b);
+}
+
+function drawTemplate(project) {
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#9eafc4";
+  ctx.setLineDash([2,5]);
+  ctx.beginPath();
+  for (let i = 0; i <= 3; i++) {
+    stroke(project([i,0,0]),project([i,3,0]));
+    stroke(project([0,i,0]),project([3,i,0]));
+    stroke(project([i,0,0]),project([i,0,3]));
+    stroke(project([0,i,0]),project([0,i,3]));
+    stroke(project([0,0,i]),project([3,0,i]));
+    stroke(project([0,0,i]),project([0,3,i]));
+  }
+  for (const [a,b] of [
+    [[3,0,3],[3,3,3]],[[0,3,3],[3,3,3]],[[3,3,0],[3,3,3]],
+    [[1,0,3],[1,3,3]],[[2,0,3],[2,3,3]],[[0,1,3],[3,1,3]],[[0,2,3],[3,2,3]]
+  ]) stroke(project(a),project(b));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const from = project([2,-.83,0]);
+  const to = project([2,-.15,0]);
+  const arrow = Math.atan2(to[1]-from[1],to[0]-from[0]);
+  ctx.strokeStyle = colors.front;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  stroke(from,to);
+  for (const angle of [-.55,.55]) {
+    stroke(to,[to[0]-11*Math.cos(arrow+angle),to[1]-11*Math.sin(arrow+angle)]);
+  }
+  ctx.stroke();
+  ctx.font = "700 13px Inter, system-ui, sans-serif";
+  ctx.fillStyle = colors.front;
+  ctx.fillText("Alzado",from[0]+7,from[1]+12);
+}
+
+function drawSegments(segments, color, width, dash = []) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  for (const segment of segments) stroke(...segment);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawMove(project, drawing, move, now) {
+  const color = colors[move[3]];
+  const group = drawing.groups.get(move);
+  const active = new Set(group);
+  const placed = new Set(moves[exercise].slice(0,step-1).flatMap(previousMove => drawing.groups.get(previousMove)));
+  const background = drawing.projections.filter(segment => !active.has(segment)).map(segment => {
+    const location = placed.has(segment) ? segment.to : segment.from;
+    return location.map(project);
+  });
+  drawSegments(background, "#8c9aac", 2.1);
+
+  const origins = group.map(segment => segment.from.map(project));
+  const targets = group.map(segment => segment.to.map(project));
+  const start = drawingStart === null ? null : drawingStart+movePreview;
+  const t = moveReady ? 0 : start === null ? 1 : progress(now,start,moveDuration);
+  const motion = t*t*(3-2*t);
+  const movingLines = origins.map((line,i) => line.map((point,j) => interpolate(point,targets[i][j],motion)));
+
+  if (t < 1) {
+    drawSegments(targets, "#edf3fa", 6);
+    drawSegments(targets, color, 3, [5,5]);
+    if (t > 0) drawSegments(origins, "#a0aec0", 1.7, [2,4]);
+
+    // The arrow connects the same point on the two copies of the outline.
+    const highest = group.reduce((best, segment) => {
+      const height = candidate => Math.min(candidate.from[0][2],candidate.from[1][2]);
+      return height(segment) > height(best) ? segment : best;
+    });
+    const source = project(offset(interpolate(...highest.from,.5),[0,0,.26]));
+    const target = project(offset(interpolate(...highest.to,.5),[0,0,.26]));
+    const angle = Math.atan2(target[1]-source[1],target[0]-source[0]);
+    const head = [-.49,.49].map(side => [target,[target[0]-10*Math.cos(angle+side),target[1]-10*Math.sin(angle+side)]]);
+    drawSegments([[source,target], ...head], color, 1.8);
+  }
+
+  drawSegments(movingLines, "#edf3fa", 7.6);
+  drawSegments(movingLines, color, 4.5);
+  return t;
+}
+
+function drawLesson(project, width, height, now) {
+  const isTracing = step === lastStep()-1;
+  const isClosing = step === lastStep();
+  const drawing = drawings[exercise];
+  const move = currentMove();
+  let t = 1;
+  drawTemplate(project);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (move) {
+    t = drawMove(project,drawing,move,now);
+  } else {
+    const duration = step === 0 ? 1850 : 1250;
+    t = drawingStart === null ? 1 : progress(now,drawingStart,duration);
+    if (isTracing || isClosing) {
+      const motion = t*t*(3-2*t);
+      drawSegments([...drawing.retained.values()].map(edge => edge.map(project)), colors.edge, 2.7);
+      const length = isTracing ? .28*motion : .28+.22*motion;
+      const added = drawing.missing.flatMap(([a,b]) =>
+        [[a,interpolate(a,b,length)],[b,interpolate(b,a,length)]].map(edge => edge.map(project)));
+      drawSegments(added, isClosing && t === 1 ? colors.edge : colors.added, 3);
+    } else {
+      for (const direction of ["front","left"]) {
+        const front = direction === "front";
+        const copy = ease(front ? Math.min(1,t*1.37) : Math.max(0,(t-.27)/.73));
+        const projected = drawing.projections.filter(segment => segment.direction === direction).map(({from}) =>
+          from.map(point => {
+            const [x,y,z] = point;
+            const u = front ? x : 3-y;
+            const flat = [width*(front ? .72 : .28)+(u-1.5)*height*.115, height*.56+(1.5-z)*height*.115];
+            return interpolate(flat,project(point),copy);
+          }));
+        drawSegments(projected, colors[direction], 2.65);
+      }
+    }
+  }
+  if (t === 1 && drawingStart !== null) {
+    drawingStart = null;
+    if (move) updateMoveAction();
+  }
+  if (drawingStart !== null) schedule();
+}
+
+function render(now) {
+  frame = undefined;
+  if (cameraMove) {
+    const t = progress(now,cameraMove.start,460);
+    camera = interpolate(cameraMove.from,cameraMove.to,ease(t));
+    if (t === 1) cameraMove = undefined;
+  }
+  const {width, height} = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const pixelWidth = Math.round(width*ratio);
+  const pixelHeight = Math.round(height*ratio);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,width,height);
+  const [yaw,pitch] = modelMode ? camera : iso;
+  const right = [Math.cos(yaw), Math.sin(yaw), 0];
+  const eye = [Math.sin(yaw)*Math.cos(pitch), -Math.cos(yaw)*Math.cos(pitch), Math.sin(pitch)];
+  const up = [-Math.sin(yaw)*Math.sin(pitch), Math.cos(yaw)*Math.sin(pitch), Math.cos(pitch)];
+  const unit = Math.min(width/5.7,height/5.65);
+  const project = point => {
+    const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
+    return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
+  };
+  if (!modelMode) {
+    drawLesson(project,width,height,now);
+    return;
+  }
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const straight = selectedView && !cameraMove;
+  for (const face of projectedFaces(exercise,eye)) {
+    const points = face.points.map(project);
+    ctx.beginPath();
+    ctx.moveTo(...points[0]);
+    points.slice(1).forEach(point => ctx.lineTo(...point));
+    ctx.closePath();
+    ctx.fillStyle = face.fill;
+    ctx.fill();
+    ctx.lineWidth = .9;
+    ctx.strokeStyle = straight ? face.fill : "#e9f6ff";
+    ctx.stroke();
+    ctx.beginPath();
+    for (const [a,b] of face.edges) stroke(project(a),project(b));
+    ctx.lineWidth = 1.55;
+    ctx.strokeStyle = "#1e4364";
+    ctx.stroke();
+  }
+  if (cameraMove) schedule();
+}
+
+canvas.addEventListener("pointerdown", event => {
+  if (!modelMode || event.button !== 0) return;
+  drag = {id:event.pointerId,x:event.clientX,y:event.clientY};
+  canvas.setPointerCapture(event.pointerId);
+  canvas.classList.add("dragging");
+});
+canvas.addEventListener("pointermove", event => {
+  if (drag?.id !== event.pointerId) return;
+  cameraMove = undefined;
+  if (selectedView) selectView(null);
+  camera[0] -= (event.clientX-drag.x)*.012;
+  camera[1] = Math.max(-Math.PI/3,Math.min(Math.PI/2,camera[1]+(event.clientY-drag.y)*.011));
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  schedule();
+});
+for (const eventName of ["pointerup","pointercancel","lostpointercapture"]) {
+  canvas.addEventListener(eventName, () => {drag = undefined; canvas.classList.remove("dragging");});
+}
+canvas.addEventListener("keydown", event => {
+  const movements = {ArrowLeft:[-.16,0],ArrowRight:[.16,0],ArrowUp:[0,.13],ArrowDown:[0,-.13]};
+  const move = movements[event.key];
+  if (!modelMode || !move) return;
+  event.preventDefault();
+  cameraMove = undefined;
+  if (selectedView) selectView(null);
+  camera[0] += move[0];
+  camera[1] = Math.max(-Math.PI/3,Math.min(Math.PI/2,camera[1]+move[1]));
+  schedule();
+});
+new ResizeObserver(schedule).observe(canvas);
+setStep(0);
+</script>
+</body>
+</html>
