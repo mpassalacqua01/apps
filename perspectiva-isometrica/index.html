@@ -148,7 +148,7 @@
   <div class="workspace">
     <section class="panel views" aria-labelledby="views-title">
       <h2 id="views-title">Vistas de la ficha</h2>
-      <p class="hint">El azul señala el alzado y el naranja, el perfil. Consulta la planta para situar los escalones.</p>
+      <p class="hint">Alzado en azul, perfil izquierdo en naranja y planta en verde.</p>
       <div class="view-grid">
         <button type="button" class="view" data-view="front" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Alzado</span></button>
         <button type="button" class="view" data-view="left" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Perfil izquierdo</span></button>
@@ -197,6 +197,8 @@ const exercises = {
   f: [[0,0,2], [0,0,2], [0,3,3]]
 };
 
+const inspectViews = ["Vistas", "Observa las superficies de cada vista",
+  "Fíjate en los contornos que separan las caras. Cuando estés listo, pulsa «Copiar vistas» para llevar el alzado y el perfil a la plantilla."];
 const first = ["Copiar", "Copia el alzado y el perfil en la plantilla",
   "El alzado (azul) va en la cara derecha y el perfil izquierdo (naranja) en la izquierda. Mantén verticales las alturas. Sigue las diagonales para el ancho y el fondo."];
 const corners = ["Trazar", "Saca líneas cortas desde los vértices",
@@ -255,7 +257,7 @@ const moves = {
       "El tramo verde recorre las dos casillas delanteras. Mueve el rectángulo naranja dos casillas hacia la derecha.", "left", 2]
   ]
 };
-const lessons = Object.fromEntries(Object.entries(moves).map(([key, list]) => [key, [first, ...list, corners, finish]]));
+const lessons = Object.fromEntries(Object.entries(moves).map(([key, list]) => [key, [inspectViews, first, ...list, corners, finish]]));
 const colors = {front:"#2451a3", left:"#9a410e", top:"#11705e", added:"#733ea1", edge:"#233956"};
 const iso = [-Math.PI / 4, Math.atan(1 / Math.sqrt(2))];
 const angles = {front:[0,0], left:[-Math.PI/2,0], top:[0,Math.PI/2]};
@@ -274,7 +276,9 @@ const help = document.querySelector(".scene-help");
 const title = document.querySelector("#model-title");
 const moveKey = document.querySelector("#move-key");
 const moveAction = document.querySelector("#move-action");
-const currentMove = () => moves[exercise][step-1];
+const copyStep = 1;
+const firstMoveStep = copyStep + 1;
+const currentMove = () => moves[exercise][step-firstMoveStep];
 const movePreview = 1850;
 const moveDuration = 1650;
 const lastStep = () => lessons[exercise].length - 1;
@@ -318,6 +322,12 @@ function drawView(button, move) {
   const data = viewDepth(exercise, direction);
   const color = colors[direction];
   pen.clearRect(0,0,220,220);
+  pen.fillStyle = faceFills[direction];
+  pen.globalAlpha = move ? .25 : .72;
+  data.forEach((row, y) => row.forEach((depth, x) => {
+    if (depth >= 0) pen.fillRect(offset+x*size,offset+y*size,size,size);
+  }));
+  pen.globalAlpha = 1;
   pen.strokeStyle = "#8190a3";
   pen.lineWidth = 1.6;
   pen.setLineDash([3,6]);
@@ -384,7 +394,7 @@ function updateUI() {
     const view = button.dataset.view;
     const reference = move && view === "top";
     button.disabled = !modelMode;
-    button.classList.toggle("current", Boolean(reference) || move?.[3] === view || (!modelMode && step === 0 && view !== "top"));
+    button.classList.toggle("current", Boolean(reference) || move?.[3] === view || (!modelMode && step === copyStep && view !== "top"));
     if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
     else button.removeAttribute("aria-label");
     drawView(button, move);
@@ -394,7 +404,8 @@ function updateUI() {
   document.querySelector("#instruction-text").textContent = instruction;
   previous.disabled = step === 0;
   next.disabled = step === lastStep();
-  replay.disabled = modelMode;
+  next.textContent = step === 0 ? "Copiar vistas →" : "Siguiente →";
+  replay.disabled = modelMode || step === 0;
   modelToggle.hidden = step !== lastStep();
   moveKey.hidden = !move;
   if (move) moveKey.style.setProperty("--move-color", colors[move[3]]);
@@ -406,7 +417,7 @@ function updateUI() {
     ? "Azul para el alzado, naranja para el perfil y verde para la planta. Pulsa una vista para mirar la pieza desde esa dirección."
     : move
       ? "Las aristas que se mueven están en azul o naranja. El trazo verde de la planta marca dónde colocarlas."
-      : "El azul señala el alzado y el naranja, el perfil. Consulta la planta para situar los escalones.";
+      : "Alzado en azul, perfil izquierdo en naranja y planta en verde.";
   canvas.classList.toggle("interactive", modelMode);
   canvas.tabIndex = modelMode ? 0 : -1;
   canvas.setAttribute("aria-label", modelMode
@@ -429,7 +440,7 @@ function setStep(value, animateMove = false) {
   cameraMove = undefined;
   selectView(null);
   moveReady = Boolean(currentMove()) && !animateMove;
-  drawingStart = moveReady ? null : performance.now();
+  drawingStart = step === 0 || moveReady ? null : performance.now();
   updateUI();
   schedule();
 }
@@ -672,7 +683,7 @@ function drawMove(project, drawing, move, now) {
   const color = colors[move[3]];
   const group = drawing.groups.get(move);
   const active = new Set(group);
-  const placed = new Set(moves[exercise].slice(0,step-1).flatMap(previousMove => drawing.groups.get(previousMove)));
+  const placed = new Set(moves[exercise].slice(0,step-firstMoveStep).flatMap(previousMove => drawing.groups.get(previousMove)));
   const background = drawing.projections.filter(segment => !active.has(segment)).map(segment => {
     const location = placed.has(segment) ? segment.to : segment.from;
     return location.map(project);
@@ -715,13 +726,14 @@ function drawLesson(project, width, height, now) {
   const move = currentMove();
   let t = 1;
   drawTemplate(project);
+  if (step === 0) return;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   if (move) {
     t = drawMove(project,drawing,move,now);
   } else {
-    const duration = step === 0 ? 1850 : 1250;
+    const duration = step === copyStep ? 1850 : 1250;
     t = drawingStart === null ? 1 : progress(now,drawingStart,duration);
     if (isTracing || isClosing) {
       const motion = t*t*(3-2*t);
