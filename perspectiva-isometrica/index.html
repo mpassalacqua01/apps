@@ -403,7 +403,7 @@ function updateUI() {
   help.hidden = !modelMode;
   title.textContent = modelMode ? "Pieza en 3D" : "Plantilla isométrica";
   document.querySelector(".hint").textContent = modelMode
-    ? "Pulsa una vista para mirar la pieza desde esa dirección."
+    ? "Azul para el alzado, naranja para el perfil y verde para la planta. Pulsa una vista para mirar la pieza desde esa dirección."
     : move
       ? "Las aristas que se mueven están en azul o naranja. El trazo verde de la planta marca dónde colocarlas."
       : "El azul señala el alzado y el naranja, el perfil. Consulta la planta para situar los escalones.";
@@ -510,14 +510,14 @@ const ease = value => 1 - Math.pow(1-value, 3);
 const progress = (now, start, ms) => reduceMotion.matches ? 1 : Math.max(0, Math.min(1, (now-start)/ms));
 
 const faces = [
-  {n:[-1,0,0], p:[[0,0,0],[0,1,0],[0,1,1],[0,0,1]], shade:1},
-  {n:[1,0,0], p:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], shade:1},
-  {n:[0,-1,0], p:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]], shade:2},
-  {n:[0,1,0], p:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]], shade:2},
-  {n:[0,0,1], p:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]], shade:0},
-  {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], shade:1}
+  {n:[-1,0,0], p:[[0,0,0],[0,1,0],[0,1,1],[0,0,1]], view:"left"},
+  {n:[1,0,0], p:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], view:"left"},
+  {n:[0,-1,0], p:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]], view:"front"},
+  {n:[0,1,0], p:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]], view:"front"},
+  {n:[0,0,1], p:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]], view:"top"},
+  {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], view:"top"}
 ];
-const palette = ["#99daf0","#56a8d8","#397fb4"];
+const faceFills = {front:"#79a5ed", left:"#eca66d", top:"#77c9a5"};
 const dot = (a,b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 const interpolate = (a,b,t) => a.map((v,i) => v+(b[i]-v)*t);
 const offset = (a,b) => a.map((v,i) => v+b[i]);
@@ -537,7 +537,7 @@ function projectedFaces(key, eye) {
         return !cells.has(adjacent.join()) || cells.has(offset(adjacent,face.n).join())
           ? [[points[index],points[(index+1)%4]]] : [];
       });
-      result.push({points, edges, depth:dot(interpolate(points[0],points[2],.5),eye), fill:palette[face.shade]});
+      result.push({points, edges, depth:dot(interpolate(points[0],points[2],.5),eye), fill:faceFills[face.view]});
     }
   }
   return result.sort((a,b) => a.depth-b.depth);
