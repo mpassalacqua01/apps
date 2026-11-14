@@ -820,7 +820,7 @@ function drawArrow(from, to, color, width) {
   ctx.restore();
 }
 
-function drawFrontArrow(project, eye, width, height) {
+function drawFrontArrow(project, eye) {
   // La flecha se apoya en z = 0, igual que la base de la pieza.
   if (Math.abs(eye[2]) < .06) return;
   const centerX = drawings[exercise]?.centerX ?? 1.5;
@@ -832,25 +832,21 @@ function drawFrontArrow(project, eye, width, height) {
   polygonPath(ctx,points);
   ctx.fillStyle = colors.front;
   ctx.fill();
-  if (eye[1] <= 0) {
-    const [tailX,tailY] = project([centerX,-.95,0]);
-    const labelTop = Math.max(...points.map(([,y]) => y)) + 8;
-    ctx.save();
-    ctx.font = "700 13px Inter, system-ui, sans-serif";
-    if (labelTop + 15 <= height) {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText("Alzado",tailX,labelTop);
-    } else {
-      const right = Math.max(...points.map(([x]) => x));
-      const fitsRight = right + 8 + ctx.measureText("Alzado").width <= width;
-      const left = Math.min(...points.map(([x]) => x));
-      ctx.textAlign = fitsRight ? "left" : "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText("Alzado",fitsRight ? right+8 : left-8,tailY);
-    }
-    ctx.restore();
-  }
+  if (eye[2] < .06) return;
+
+  // Proyecta los ejes del texto en el plano de apoyo, detrás de la cola.
+  const scale = .024;
+  const labelY = -1.34;
+  const [x,y] = project([centerX,labelY,0]);
+  const [axisX,axisXY] = project([centerX+scale,labelY,0]);
+  const [axisYX,axisY] = project([centerX,labelY-scale,0]);
+  ctx.save();
+  ctx.transform(axisX-x,axisXY-y,axisYX-x,axisY-y,x,y);
+  ctx.font = "700 13px Inter, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("Alzado",0,0);
+  ctx.restore();
 }
 
 const rampDiagonal = [[3,1,2],[3,2,3]];
@@ -1015,7 +1011,7 @@ function render(now) {
     const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
   };
-  drawFrontArrow(project,eye,width,height);
+  drawFrontArrow(project,eye);
   if (!modelMode) {
     if (rightProfile) drawRampLesson(project,width,height,now);
     else drawLesson(project,width,height,now);
