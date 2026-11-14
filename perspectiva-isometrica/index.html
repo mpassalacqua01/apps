@@ -751,6 +751,9 @@ function mergeEdges(edges) {
 
 const drawings = Object.fromEntries(Object.keys(exercises).map(key => {
   const projections = ["front","left"].flatMap(direction => projectionEdges(key,direction));
+  const frontXs = projections.filter(({direction}) => direction === "front")
+    .flatMap(({from}) => from.map(([x]) => x));
+  const centerX = (Math.min(...frontXs)+Math.max(...frontXs))/2;
   const groups = new Map(moves[key].map(move => {
     const [,,,direction,depth,upper,span] = move;
     return [move, projections.filter(segment =>
@@ -764,7 +767,7 @@ const drawings = Object.fromEntries(Object.keys(exercises).map(key => {
   const anchored = new Set([...retained.values()].flat().map(point => point.join()));
   const missing = mergeEdges([...outline].filter(([edge]) => !placed.has(edge)).map(([,edge]) => edge))
     .map(([a,b]) => anchored.has(a.join()) || !anchored.has(b.join()) ? [a,b] : [b,a]);
-  return [key,{projections, groups, retained, missing}];
+  return [key,{projections, groups, retained, missing, centerX}];
 }));
 
 function stroke(a,b) {
@@ -833,7 +836,7 @@ function drawArrowLabel(label, x, y, alignment) {
 function drawModelFrontArrow(project, eye) {
   // La flecha se apoya en z = 0, igual que la base de la pieza.
   if (Math.abs(eye[2]) < .06) return;
-  const centerX = 2;
+  const centerX = drawings[exercise]?.centerX ?? 1.5;
   const outline = [
     [0,-.15],[.19,-.44],[.065,-.44],[.065,-.95],
     [-.065,-.95],[-.065,-.44],[-.19,-.44]
