@@ -830,37 +830,21 @@ function drawArrowLabel(label, x, y, alignment) {
   ctx.restore();
 }
 
-function drawModelFrontArrow(project, visibleFaces, eye, unit, width, height) {
-  const center = project([1.5,1.5,1.46]);
-  const front = project([1.5,.5,1.46]);
-  let dx = front[0]-center[0];
-  let dy = front[1]-center[1];
-  const length = Math.hypot(dx,dy);
-  const headOn = length < unit*.12;
-  if (headOn) {
-    dx = 0;
-    dy = eye[1] < 0 ? 1 : -1;
-  } else {
-    dx /= length;
-    dy /= length;
+function drawModelFrontArrow(project, eye) {
+  // La flecha se apoya en z = 0, igual que la base de la pieza.
+  if (Math.abs(eye[2]) < .06) return;
+  const centerX = 2;
+  const outline = [
+    [0,-.15],[.19,-.44],[.065,-.44],[.065,-.95],
+    [-.065,-.95],[-.065,-.44],[-.19,-.44]
+  ];
+  polygonPath(ctx,outline.map(([x,y]) => project([centerX+x,y,0])));
+  ctx.fillStyle = colors.front;
+  ctx.fill();
+  if (eye[1] <= 0) {
+    const [x,y] = project([centerX,-1.08,0]);
+    drawArrowLabel("Alzado",x,y+4,"center");
   }
-  // Coloca la flecha fuera de la silueta siguiendo la dirección del alzado proyectada.
-  const distance = Math.max(...visibleFaces.flatMap(face => face.points.map(point => {
-    const [x,y] = project(point);
-    return (x-center[0])*dx+(y-center[1])*dy;
-  })));
-  const position = gap => [center[0]+(distance+gap)*dx,center[1]+(distance+gap)*dy];
-  const canvasEdge = Math.min(
-    (width/2-7)/Math.max(Math.abs(dx),.001),
-    (height/2-7)/Math.max(Math.abs(dy),.001)
-  );
-  const from = position(Math.min(31,canvasEdge-distance));
-  drawArrow(from,position(7),colors.front,3.4);
-  const label = eye[1] > .00001 ? "Alzado (detrás)" : "Alzado";
-  const beside = from[1] < 22 || from[1]+16 > height-7;
-  const x = Math.max(49,Math.min(width-49,from[0]+(beside ? 55 : 0)));
-  const y = Math.max(15,Math.min(height-7,from[1]+(dy < -.5 ? -7 : 16)));
-  drawArrowLabel(label,x,y,"center");
 }
 
 const rampDiagonal = [[3,1,2],[3,2,3]];
@@ -1032,12 +1016,12 @@ function render(now) {
   }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+  drawModelFrontArrow(project,eye);
   const visibleFaces = rightProfile
     ? rampFaces.filter(({normal}) => dot(normal,eye) > .00001)
     : projectedFaces(exercise,eye);
   if (rightProfile) drawRampModel(project,visibleFaces);
   else drawBlockModel(project,visibleFaces,selectedView && !cameraMove);
-  drawModelFrontArrow(project,visibleFaces,eye,unit,width,height);
   if (cameraMove) schedule();
 }
 
