@@ -795,11 +795,6 @@ function drawTemplate(project, rightProfile = false) {
   ]) stroke(project(a),project(b));
   ctx.stroke();
   ctx.setLineDash([]);
-
-  const from = project([2,-.83,0]);
-  const to = project([2,-.15,0]);
-  drawArrow(from,to,colors.front,3.4);
-  drawArrowLabel("Alzado",from[0]+(rightProfile ? -7 : 7),from[1]+13,rightProfile ? "right" : "left");
 }
 
 function drawSegments(segments, color, width, dash = []) {
@@ -833,7 +828,7 @@ function drawArrowLabel(label, x, y, alignment) {
   ctx.restore();
 }
 
-function drawModelFrontArrow(project, eye) {
+function drawFrontArrow(project, eye) {
   // La flecha se apoya en z = 0, igual que la base de la pieza.
   if (Math.abs(eye[2]) < .06) return;
   const centerX = drawings[exercise]?.centerX ?? 1.5;
@@ -1012,6 +1007,7 @@ function render(now) {
     const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
   };
+  drawFrontArrow(project,eye);
   if (!modelMode) {
     if (rightProfile) drawRampLesson(project,width,height,now);
     else drawLesson(project,width,height,now);
@@ -1019,7 +1015,6 @@ function render(now) {
   }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  drawModelFrontArrow(project,eye);
   const visibleFaces = rightProfile
     ? rampFaces.filter(({normal}) => dot(normal,eye) > .00001)
     : projectedFaces(exercise,eye);
