@@ -562,20 +562,21 @@ const progress = (now, start, ms) => reduceMotion.matches ? 1 : Math.max(0, Math
 
 const faces = [
   {n:[-1,0,0], p:[[0,0,0],[0,1,0],[0,1,1],[0,0,1]], view:"left"},
-  {n:[1,0,0], p:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], view:"left"},
+  {n:[1,0,0], p:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], view:"right"},
   {n:[0,-1,0], p:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]], view:"front"},
-  {n:[0,1,0], p:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]], view:"front"},
+  {n:[0,1,0], p:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]], view:"back"},
   {n:[0,0,1], p:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]], view:"top"},
-  {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], view:"top"}
+  {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], view:"bottom"}
 ];
 const faceFills = {front:"#79a5ed", left:"#eca66d", right:"#eca66d", top:"#77c9a5"};
+const neutralFaceFill = "#d6dce3";
 const dot = (a,b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 const interpolate = (a,b,t) => a.map((v,i) => v+(b[i]-v)*t);
 const offset = (a,b) => a.map((v,i) => v+b[i]);
 
 // La g es un prisma de 3 casillas de ancho con este perfil derecho (fondo, altura).
 const rampProfile = [[0,0],[3,0],[3,3],[2,3],[1,2],[0,2]];
-const rampSides = ["top","front","top","ramp","top","front"];
+const rampSides = ["bottom","back","top","ramp","top","front"];
 const rampFaces = rampProfile.map(([y,z], index) => {
   const [endY,endZ] = rampProfile[(index+1)%rampProfile.length];
   return {
@@ -654,13 +655,17 @@ function drawRampView(pen, direction, move) {
   }
 }
 
-function drawRampModel(project, eye) {
-  for (const face of rampFaces.filter(({normal}) => dot(normal,eye) > .00001)) {
+function modelFaceFill(view, profile) {
+  return view === "front" || view === "top" || view === profile ? faceFills[view] : neutralFaceFill;
+}
+
+function drawRampModel(project, visibleFaces) {
+  for (const face of visibleFaces) {
     const points = face.points.map(project);
     if (face.view === "ramp") hatchRamp(ctx,project,2);
     else {
       polygonPath(ctx,points);
-      ctx.fillStyle = faceFills[face.view];
+      ctx.fillStyle = modelFaceFill(face.view,"right");
       ctx.fill();
     }
     drawSegments(polygonEdges(points),colors.edge,1.8);
@@ -682,7 +687,7 @@ function projectedFaces(key, eye) {
         return !cells.has(adjacent.join()) || cells.has(offset(adjacent,face.n).join())
           ? [[points[index],points[(index+1)%4]]] : [];
       });
-      result.push({points, edges, depth:dot(interpolate(points[0],points[2],.5),eye), fill:faceFills[face.view]});
+      result.push({points, edges, depth:dot(interpolate(points[0],points[2],.5),eye), view:face.view});
     }
   }
   return result.sort((a,b) => a.depth-b.depth);
@@ -790,20 +795,8 @@ function drawTemplate(project, rightProfile = false) {
 
   const from = project([2,-.83,0]);
   const to = project([2,-.15,0]);
-  const arrow = Math.atan2(to[1]-from[1],to[0]-from[0]);
-  ctx.strokeStyle = colors.front;
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  stroke(from,to);
-  for (const angle of [-.55,.55]) {
-    stroke(to,[to[0]-11*Math.cos(arrow+angle),to[1]-11*Math.sin(arrow+angle)]);
-  }
-  ctx.stroke();
-  ctx.font = "700 13px Inter, system-ui, sans-serif";
-  ctx.fillStyle = colors.front;
-  ctx.textAlign = rightProfile ? "right" : "left";
-  ctx.fillText("Alzado",from[0]+(rightProfile ? -7 : 7),from[1]+12);
-  ctx.textAlign = "start";
+  drawArrow(from,to,colors.front,3.4);
+  drawArrowLabel("Alzado",from[0]+(rightProfile ? -7 : 7),from[1]+13,rightProfile ? "right" : "left");
 }
 
 function drawSegments(segments, color, width, dash = []) {
@@ -814,6 +807,60 @@ function drawSegments(segments, color, width, dash = []) {
   for (const segment of segments) stroke(...segment);
   ctx.stroke();
   ctx.setLineDash([]);
+}
+
+function drawArrow(from, to, color, width) {
+  const angle = Math.atan2(to[1]-from[1],to[0]-from[0]);
+  const size = Math.min(12,Math.hypot(to[0]-from[0],to[1]-from[1])*.65);
+  const head = [-.52,.52].map(side =>
+    [to,[to[0]-size*Math.cos(angle+side),to[1]-size*Math.sin(angle+side)]]);
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  drawSegments([[from,to],...head],color,width);
+  ctx.restore();
+}
+
+function drawArrowLabel(label, x, y, alignment) {
+  ctx.save();
+  ctx.font = "700 13px Inter, system-ui, sans-serif";
+  ctx.fillStyle = colors.front;
+  ctx.textAlign = alignment;
+  ctx.fillText(label,x,y);
+  ctx.restore();
+}
+
+function drawModelFrontArrow(project, visibleFaces, eye, unit, width, height) {
+  const center = project([1.5,1.5,1.46]);
+  const front = project([1.5,.5,1.46]);
+  let dx = front[0]-center[0];
+  let dy = front[1]-center[1];
+  const length = Math.hypot(dx,dy);
+  const headOn = length < unit*.12;
+  if (headOn) {
+    dx = 0;
+    dy = eye[1] < 0 ? 1 : -1;
+  } else {
+    dx /= length;
+    dy /= length;
+  }
+  // Coloca la flecha fuera de la silueta siguiendo la dirección del alzado proyectada.
+  const distance = Math.max(...visibleFaces.flatMap(face => face.points.map(point => {
+    const [x,y] = project(point);
+    return (x-center[0])*dx+(y-center[1])*dy;
+  })));
+  const position = gap => [center[0]+(distance+gap)*dx,center[1]+(distance+gap)*dy];
+  const canvasEdge = Math.min(
+    (width/2-7)/Math.max(Math.abs(dx),.001),
+    (height/2-7)/Math.max(Math.abs(dy),.001)
+  );
+  const from = position(Math.min(31,canvasEdge-distance));
+  drawArrow(from,position(7),colors.front,3.4);
+  const label = eye[1] > .00001 ? "Alzado (detrás)" : "Alzado";
+  const beside = from[1] < 22 || from[1]+16 > height-7;
+  const x = Math.max(49,Math.min(width-49,from[0]+(beside ? 55 : 0)));
+  const y = Math.max(15,Math.min(height-7,from[1]+(dy < -.5 ? -7 : 16)));
+  drawArrowLabel(label,x,y,"center");
 }
 
 const rampDiagonal = [[3,1,2],[3,2,3]];
@@ -850,9 +897,7 @@ function drawRampLesson(project,width,height,now) {
     if (motion < 1) {
       drawSegments(place([oppositeDiagonal]),colors.right,2.5,[5,5]);
       const start = project([3,2,3.23]), end = project([0,2,3.23]);
-      const angle = Math.atan2(end[1]-start[1],end[0]-start[0]);
-      const head = [-.49,.49].map(side => [end,[end[0]-9*Math.cos(angle+side),end[1]-9*Math.sin(angle+side)]]);
-      drawSegments([[start,end],...head],colors.right,1.8);
+      drawArrow(start,end,colors.right,2.8);
     }
     const diagonal = rampDiagonal.map((point,index) => interpolate(point,oppositeDiagonal[index],ease(motion)));
     drawSegments(place([diagonal]),colors.right,4);
@@ -900,9 +945,7 @@ function drawMove(project, drawing, move, now) {
     });
     const source = project(offset(interpolate(...highest.from,.5),[0,0,.26]));
     const target = project(offset(interpolate(...highest.to,.5),[0,0,.26]));
-    const angle = Math.atan2(target[1]-source[1],target[0]-source[0]);
-    const head = [-.49,.49].map(side => [target,[target[0]-10*Math.cos(angle+side),target[1]-10*Math.sin(angle+side)]]);
-    drawSegments([[source,target], ...head], color, 1.8);
+    drawArrow(source,target,color,2.8);
   }
 
   drawSegments(movingLines, "#edf3fa", 7.6);
@@ -977,7 +1020,7 @@ function render(now) {
   const right = [Math.cos(yaw), Math.sin(yaw), 0];
   const eye = [Math.sin(yaw)*Math.cos(pitch), -Math.cos(yaw)*Math.cos(pitch), Math.sin(pitch)];
   const up = [-Math.sin(yaw)*Math.sin(pitch), Math.cos(yaw)*Math.sin(pitch), Math.cos(pitch)];
-  const unit = Math.min(width/5.7,height/5.65);
+  const unit = modelMode ? Math.min((width-40)/5.7,(height-36)/5.65) : Math.min(width/5.7,height/5.65);
   const project = point => {
     const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
@@ -989,22 +1032,27 @@ function render(now) {
   }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  if (rightProfile) {
-    drawRampModel(project,eye);
-    if (cameraMove) schedule();
-    return;
-  }
-  const straight = selectedView && !cameraMove;
-  for (const face of projectedFaces(exercise,eye)) {
+  const visibleFaces = rightProfile
+    ? rampFaces.filter(({normal}) => dot(normal,eye) > .00001)
+    : projectedFaces(exercise,eye);
+  if (rightProfile) drawRampModel(project,visibleFaces);
+  else drawBlockModel(project,visibleFaces,selectedView && !cameraMove);
+  drawModelFrontArrow(project,visibleFaces,eye,unit,width,height);
+  if (cameraMove) schedule();
+}
+
+function drawBlockModel(project, visibleFaces, straight) {
+  for (const face of visibleFaces) {
     const points = face.points.map(project);
     ctx.beginPath();
     ctx.moveTo(...points[0]);
     points.slice(1).forEach(point => ctx.lineTo(...point));
     ctx.closePath();
-    ctx.fillStyle = face.fill;
+    const fill = modelFaceFill(face.view,"left");
+    ctx.fillStyle = fill;
     ctx.fill();
     ctx.lineWidth = .9;
-    ctx.strokeStyle = straight ? face.fill : "#e9f6ff";
+    ctx.strokeStyle = straight ? fill : "#e9f6ff";
     ctx.stroke();
     ctx.beginPath();
     for (const [a,b] of face.edges) stroke(project(a),project(b));
@@ -1012,7 +1060,6 @@ function render(now) {
     ctx.strokeStyle = "#1e4364";
     ctx.stroke();
   }
-  if (cameraMove) schedule();
 }
 
 canvas.addEventListener("pointerdown", event => {
