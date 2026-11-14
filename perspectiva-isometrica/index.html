@@ -89,6 +89,9 @@
   .primary:hover:not(:disabled) { background:#174697; }
   footer { padding:14px 0 20px; color:var(--muted); font-size:.77rem; }
   footer a { color:#354e74; text-underline-offset:2px; }
+  @media (min-width:901px) {
+    .steps:is([data-exercise="i"],[data-exercise="j"],[data-exercise="l"]) { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  }
   @media (max-width:900px) {
     .steps { grid-template-columns:repeat(min(var(--steps,4),4),minmax(0,1fr)); }
   }
@@ -1232,17 +1235,96 @@ function hConstructionSteps(drawing) {
   ];
 }
 
+const rectanglePath = (left,right,low,high) => [[left,low],[right,low],[right,high],[left,high],[left,low]];
+
+// Cada trazado usa las coordenadas de su vista: anchura o fondo, y altura.
+const inclinedStepPlans = {
+  i: [
+    ["front", "Frente del brazo corto",
+      "Mueve el rectángulo azul de la derecha entero una casilla hacia el fondo. La franja baja de la izquierda se queda cerrada en su sitio.",
+      1, [rectanglePath(2,3,0,1)]],
+    ["front", "Frente del escalón central",
+      "Lleva el cuadrado azul de la columna central dos casillas hacia el fondo. La raya verde señala dónde sube el escalón.",
+      2, [rectanglePath(1,2,1,2)]],
+    ["front", "Borde de la meseta",
+      "Lleva el borde azul de arriba dos casillas hacia el fondo. Ahí acaba la rampa y empieza la meseta. Las verticales provisionales del alzado se borran.",
+      2, [[[0,3],[1,3]]], [[[0,1],[0,3]], [[1,2],[1,3]]]],
+    ["right", "Lateral delantero",
+      "Mueve el cuadrado naranja de la base una casilla hacia la izquierda. Su borde encaja con el frente del brazo corto que ya has colocado.",
+      1, [rectanglePath(0,1,0,1)]],
+    ["right", "Lateral del escalón",
+      "Mueve el cuadrado naranja del fondo una casilla hacia la izquierda. Colócalo junto al cuadrado azul del escalón central.",
+      1, [rectanglePath(2,3,1,2)]],
+    ["right", "Rampa y meseta",
+      "Lleva la diagonal naranja, el borde horizontal de la meseta y su extremo vertical dos casillas hacia la izquierda. Los tres trazos se mueven juntos.",
+      2, [[[0,1],[2,3],[3,3],[3,2]]]]
+  ],
+  j: [
+    ["front", "Frente del tramo central",
+      "Lleva el trapecio azul entero una casilla hacia el fondo. Su lado inclinado sigue marcado en el alzado porque también es el borde de la rampa delantera.",
+      1, [[[1,1],[2,0],[3,0],[3,1],[1,1]]]],
+    ["front", "Frente superior con diagonal",
+      "Mueve el contorno azul superior dos casillas hacia el fondo. Observa cómo se mueve la diagonal junto con sus aristas y se borran las dos verticales provisionales.",
+      2, [[[0,2],[0,3],[1,3],[2,2],[3,2]], [[0,2],[2,2]]], [[[0,1],[0,2]], [[3,1],[3,2]]]],
+    ["right", "Borde inferior delantero",
+      "Lleva el tramo naranja inferior una casilla a la izquierda. La marca verde de la planta señala el lateral de la rampa delantera.",
+      1, [[[0,0],[1,0]]], [[[0,0],[0,1]]]],
+    ["right", "Borde del escalón delantero",
+      "Lleva la arista naranja que está a media altura del primer escalón dos casillas hacia la izquierda. Une el frente de la pieza con el trapecio que ya colocaste.",
+      2, [[[0,1],[1,1]]]],
+    ["right", "Arista alta del fondo",
+      "Desplaza la arista naranja de arriba dos casillas a la izquierda. Las dos verticales superiores se borran al moverla.",
+      2, [[[2,3],[3,3]]], [[[2,2],[2,3]], [[3,2],[3,3]]]]
+  ],
+  k: [
+    ["front", "Borde alto de la rampa",
+      "Lleva el borde azul de arriba dos casillas hacia el fondo. La línea verde marca dónde acaba la rampa. Al moverse se borran las verticales de arriba y queda cerrado el rectángulo inferior.",
+      2, [[[0,3],[3,3]]], [[[0,1],[0,3]], [[3,1],[3,3]]]]
+  ],
+  l: [
+    ["front", "Base de la rampa baja",
+      "Lleva el tramo azul inferior de la derecha una casilla hacia el fondo. La raya verde marca dónde empieza la rampa baja.",
+      1, [[[2,0],[3,0]]], [[[2,0],[2,1]], [[3,0],[3,1]]]],
+    ["front", "Final de la rampa baja",
+      "Mueve el tramo azul de la derecha dos casillas al fondo. Marca el punto en que la rampa baja se vuelve horizontal.",
+      2, [[[2,1],[3,1]]], [[[2,1],[2,2]]]],
+    ["front", "Final de la rampa central",
+      "Mueve el tramo azul del centro dos casillas al fondo. En la planta, busca la línea verde en la columna central.",
+      2, [[[1,2],[2,2]]], [[[1,1],[1,2]]]],
+    ["front", "Final de la rampa alta",
+      "Mueve el tramo azul superior dos casillas al fondo. Se borran las verticales provisionales y queda cerrado el cuadrado inferior del alzado.",
+      2, [[[0,3],[1,3]]], [[[0,1],[0,3]], [[1,2],[1,3]]]],
+    ["right", "Perfil de la rampa central",
+      "Desplaza la diagonal naranja y su contorno una casilla a la izquierda. El perfil sube desde la base y acaba en un tramo horizontal.",
+      1, [[[1,0],[0,0],[2,2],[3,2],[3,1]]]],
+    ["right", "Perfil de la rampa alta",
+      "Desplaza la diagonal naranja y el borde de su meseta dos casillas a la izquierda. El tramo vertical provisional de delante se borra al moverlos.",
+      2, [[[0,1],[2,3],[3,3],[3,2]]], [[[0,0],[0,1]]]]
+  ]
+};
+
+function inclinedConstructionSteps(drawing, plan) {
+  const segments = paths => paths.flatMap(path => path.slice(1).map((end,index) => [path[index],end]));
+  drawing.groups.clear();
+  const steps = plan.map(([view,label,instruction,distance,paths,obsolete = []],index) => {
+    const {source} = traceViews[view];
+    const delta = view === "front" ? [0,distance,0] : [-distance,0,0];
+    const group = segments(paths).map(edge => {
+      const from = edge.map(source);
+      return {from,to:from.map(point => offset(point,delta))};
+    });
+    const id = `${view}:${index}`;
+    drawing.groups.set(id,group);
+    return [label,label,instruction,view,id,segments(obsolete).map(edge => edge.map(source))];
+  });
+  const targets = [...drawing.groups.values()].flatMap(group => group.map(({to}) => to));
+  drawing.missing = subtractEdges(drawing.outline,[...drawing.placed,...targets]);
+  return steps;
+}
+
 const inclinedDrawings = Object.fromEntries(Object.entries(inclinedModels).map(([key,model]) => {
   const drawing = buildInclinedDrawing(model);
-  moves[key] = key === "h" ? hConstructionSteps(drawing) : [...drawing.groups.keys()].sort().map(group => {
-    const [view,distance] = group.split(":");
-    const isFront = view === "front";
-    const label = isFront ? "Alzado" : "Perfil";
-    const units = distance === "1" ? "1 casilla" : `${distance} casillas`;
-    const direction = isFront ? "hacia el fondo" : "hacia la izquierda";
-    return [`${label} ${units}`,`Desplaza las aristas del ${label.toLowerCase()}`,
-      `Localiza el trazo verde en la planta. Desplaza las aristas ${isFront ? "azules" : "naranjas"} ${units} ${direction} hasta el destino discontinuo.`,view,group];
-  });
+  moves[key] = key === "h" ? hConstructionSteps(drawing) : inclinedConstructionSteps(drawing,inclinedStepPlans[key]);
   // Conserva las líneas de referencia en su plano hasta que llegue su turno.
   drawing.guides = moves[key].map((_,index) => remainingViewGuides(drawing,moves[key].slice(0,index+1)));
   const placed = [...drawing.placed,...[...drawing.groups.values()].flatMap(group => group.map(({to}) => to))];
