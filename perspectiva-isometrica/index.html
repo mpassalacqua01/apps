@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la g de la ficha de perspectiva isométrica de 3.º de ESO.">
+<meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la l de la ficha de perspectiva isométrica de 3.º de ESO.">
 <title>De las vistas a la pieza · 3.º ESO</title>
 <style>
   :root {
@@ -125,7 +125,9 @@
     .secondary { min-height:44px; }
   }
   @media (max-width:420px) {
-    .exercise-bar strong { width:100%; }
+    .exercise-bar { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:3px; }
+    .exercise-bar strong { grid-column:1 / -1; }
+    .exercise { min-width:0; }
   }
 </style>
 </head>
@@ -147,6 +149,11 @@
     <button class="exercise" type="button" data-exercise="e" aria-label="Ejercicio e" aria-pressed="false">e</button>
     <button class="exercise" type="button" data-exercise="f" aria-label="Ejercicio f" aria-pressed="false">f</button>
     <button class="exercise" type="button" data-exercise="g" aria-label="Ejercicio g" aria-pressed="false">g</button>
+    <button class="exercise" type="button" data-exercise="h" aria-label="Ejercicio h" aria-pressed="false">h</button>
+    <button class="exercise" type="button" data-exercise="i" aria-label="Ejercicio i" aria-pressed="false">i</button>
+    <button class="exercise" type="button" data-exercise="j" aria-label="Ejercicio j" aria-pressed="false">j</button>
+    <button class="exercise" type="button" data-exercise="k" aria-label="Ejercicio k" aria-pressed="false">k</button>
+    <button class="exercise" type="button" data-exercise="l" aria-label="Ejercicio l" aria-pressed="false">l</button>
   </nav>
   <div class="workspace">
     <section class="panel views" aria-labelledby="views-title">
@@ -275,6 +282,59 @@ lessons.g = [
   ["Cerrar", "Une los extremos de las diagonales",
     "Une los dos extremos bajos entre sí y haz lo mismo con los altos. Queda delimitada la rampa. El rayado azul y verde permite reconocerla al girar la pieza."]
 ];
+// [x inicial, x final, fondo inicial, fondo final, altura inicial, pendiente en x, pendiente en profundidad]
+const inclinedPieces = {
+  h: {
+    surfaces: [[0,3,0,1,1],[0,1,1,2,2,0,1],[1,3,1,2,2],[0,2,2,3,3],[2,3,2,3,3,-1]],
+    ramps: [
+      ["Rampa izquierda","Dibuja la rampa de la izquierda","En la columna izquierda, une el nivel 2 de la fila central con el nivel 3 del fondo. En el perfil se ve la diagonal."],
+      ["Rampa derecha","Dibuja la rampa de la derecha","En la fila del fondo, baja una casilla hacia el borde derecho. La diagonal se ve en el alzado."]
+    ]
+  },
+  i: {
+    surfaces: [[0,1,0,2,1,0,1],[0,1,2,3,3],[1,2,0,2,1],[1,2,2,3,2],[2,3,1,3,1]],
+    ramps: [
+      ["Rampa larga","Une los extremos de la rampa larga","En la columna izquierda, sube del nivel 1 al 3 a lo largo de dos casillas. La tercera columna empieza una fila más atrás."]
+    ]
+  },
+  j: {
+    surfaces: [[0,1,0,1,1],[1,2,0,1,1,-1],[0,3,1,2,1,0,1],[0,1,2,3,3],[1,2,2,3,3,-1],[2,3,2,3,2]],
+    ramps: [
+      ["Rampa delantera","Dibuja la rampa delantera","En la casilla central de la primera fila, une el nivel 1 del lado izquierdo con el suelo a su derecha."],
+      ["Rampa central","Dibuja la rampa central","En la segunda fila, sube del nivel 1 al 2 hacia el fondo. Esta cara ocupa las tres columnas."],
+      ["Rampa superior","Dibuja la rampa superior","En la casilla central del fondo, une la plataforma del nivel 3 con la del nivel 2 a su derecha."]
+    ]
+  },
+  k: {
+    surfaces: [[0,3,0,2,1,0,1],[0,3,2,3,3]],
+    ramps: [
+      ["Rampa","Dibuja la rampa de todo el ancho","Une el nivel 1 del borde delantero con el nivel 3, dos casillas hacia el fondo. La última fila queda plana."]
+    ]
+  },
+  l: {
+    surfaces: [[0,1,0,2,1,0,1],[0,1,2,3,3],[1,2,0,2,0,0,1],[1,2,2,3,2],[2,3,1,2,0,0,1],[2,3,2,3,1]],
+    ramps: [
+      ["Rampa alta","Dibuja la rampa de la izquierda","En la primera columna, sube del nivel 1 al 3 en las dos primeras filas."],
+      ["Rampa central","Dibuja la rampa de la columna central","Arranca en el suelo y sube al nivel 2 en dos casillas. En el perfil, esta diagonal está una casilla por debajo de la primera."],
+      ["Rampa baja","Dibuja la rampa de la derecha","Arranca en el suelo en la segunda fila y sube al nivel 1 al llegar a la fila del fondo."]
+    ]
+  }
+};
+
+for (const [key,piece] of Object.entries(inclinedPieces)) {
+  moves[key] = piece.ramps.map(([label,heading,instruction],index) =>
+    [label,heading,instruction,"added",index]);
+  lessons[key] = [
+    ["Vistas","Identifica los planos inclinados",
+      "Busca las diagonales en el alzado o en el perfil derecho. El rayado indica la superficie que corresponde a cada diagonal."],
+    ["Contorno","Traza el contorno y sitúa los niveles",
+      "Usa la planta para situar los bordes y lee las alturas en el alzado y el perfil. Fíjate en los tramos horizontales antes de trazar las diagonales."],
+    ...moves[key],
+    ["Cerrar","Completa la pieza",
+      "Comprueba que las rampas unen los niveles indicados. Pulsa «Ver en 3D» y elige una vista para comparar el modelo con la ficha."]
+  ];
+}
+
 const colors = {front:"#2451a3", left:"#9a410e", right:"#9a410e", top:"#11705e", added:"#733ea1", edge:"#233956"};
 const iso = [-Math.PI / 4, Math.atan(1 / Math.sqrt(2))];
 const rightIso = [-iso[0],iso[1]];
@@ -317,7 +377,7 @@ let drag;
 const viewGrid = {offset:14, size:64};
 
 function useRightProfile() {
-  return exercise === "g";
+  return exercise === "g" || Object.hasOwn(inclinedPieces,exercise);
 }
 
 function solidCells(key) {
@@ -357,6 +417,10 @@ function drawView(button, move) {
   const pen = button.querySelector("canvas").getContext("2d");
   const direction = button.dataset.view;
   pen.clearRect(0,0,220,220);
+  if (inclinedModels[exercise]) {
+    drawInclinedView(pen,direction,move);
+    return;
+  }
   if (useRightProfile()) {
     drawRampView(pen,direction,move);
     return;
@@ -404,6 +468,7 @@ function drawView(button, move) {
 
 function updateUI() {
   const rightProfile = useRightProfile();
+  const inclined = Boolean(inclinedModels[exercise]);
   exerciseButtons.forEach(button => button.setAttribute("aria-pressed", button.dataset.exercise === exercise));
   steps.style.setProperty("--steps", lessons[exercise].length);
   const stepLabels = lessons[exercise].map(([label]) => label);
@@ -430,7 +495,7 @@ function updateUI() {
     const reference = move && !rightProfile && view === "top";
     button.disabled = !modelMode;
     button.classList.toggle("current", Boolean(reference) || move?.[3] === view || (!modelMode && step === copyStep && view !== "top"));
-    if (rightProfile && view !== "right") button.setAttribute("aria-label", `${button.textContent}, cara inclinada rayada en azul y verde`);
+    if (exercise === "g" && view !== "right") button.setAttribute("aria-label", `${button.textContent}, cara inclinada rayada en azul y verde`);
     else if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
     else button.removeAttribute("aria-label");
     drawView(button, move);
@@ -440,17 +505,20 @@ function updateUI() {
   document.querySelector("#instruction-text").textContent = instruction;
   previous.disabled = step === 0;
   next.disabled = step === lastStep();
-  next.textContent = step === 0 ? "Copiar vistas →" : rightProfile && step === 2 ? "Unir extremos →" : "Siguiente →";
+  next.textContent = step === 0 ? (inclined ? "Trazar contorno →" : "Copiar vistas →")
+    : exercise === "g" && step === 2 ? "Unir extremos →" : "Siguiente →";
   replay.disabled = modelMode || step === 0;
   modelToggle.hidden = step !== lastStep();
   moveKey.hidden = !move;
-  moveLabel.textContent = rightProfile ? "Diagonal que se mueve" : "Aristas que se mueven";
+  moveLabel.textContent = inclined ? "Borde que sube" : rightProfile ? "Diagonal que se mueve" : "Aristas que se mueven";
   if (move) moveKey.style.setProperty("--move-color", colors[move[3]]);
   updateMoveAction();
   modelToggle.textContent = modelMode ? "Volver al dibujo" : "Ver en 3D";
   help.hidden = !modelMode;
   title.textContent = modelMode ? "Pieza en 3D" : "Plantilla isométrica";
-  document.querySelector(".hint").textContent = rightProfile
+  document.querySelector(".hint").textContent = inclined
+    ? "Rampas rayadas. Azul y verde para alzado y planta. Naranja y verde para perfil y planta."
+    : rightProfile
     ? modelMode
       ? "Pulsa una vista para girar la pieza. Busca la misma cara rayada en el alzado y en la planta."
       : "Azul + verde · Cara inclinada visible en el alzado y en la planta."
@@ -671,6 +739,164 @@ function drawRampModel(project, visibleFaces) {
     }
     drawSegments(polygonEdges(points),colors.edge,1.8);
   }
+}
+
+// Las alturas se interpolan en cada rectángulo de la planta.
+function inclinedGeometry({surfaces}) {
+  const cells = new Map();
+  const ramps = [];
+  surfaces.forEach(([x0,x1,y0,y1,z,slopeX=0,slopeY=0]) => {
+    const height = (x,y) => z+(x-x0)*slopeX+(y-y0)*slopeY;
+    const normal = [-slopeX,-slopeY,1];
+    let ramp = null;
+    if (slopeX || slopeY) {
+      const corners = [[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([x,y]) => [x,y,height(x,y)]);
+      const lower = corners.findIndex((point,index) => point[2] === Math.min(...corners.map(p => p[2]))
+        && point[2] === corners[(index+1)%4][2]);
+      ramp = {corners:[...corners.slice(lower),...corners.slice(0,lower)],
+        view:slopeX ? "right" : "front"};
+      ramps.push(ramp);
+    }
+    for (let x=x0; x<x1; x++) for (let y=y0; y<y1; y++) {
+      cells.set([x,y].join(),{height,normal,ramp,x,y});
+    }
+  });
+
+  const faces = [];
+  for (const cell of cells.values()) {
+    const {x,y,height,normal,ramp} = cell;
+    const floor = [[x,y],[x+1,y],[x+1,y+1],[x,y+1]];
+    faces.push({cell,points:floor.map(([u,v]) => [u,v,height(u,v)]),normal,view:"top",ramp});
+    faces.push({cell,points:floor.map(([u,v]) => [u,v,0]),normal:[0,0,-1],view:"bottom"});
+    const sides = [
+      {dx:0,dy:-1,view:"front"}, {dx:1,dy:0,view:"right"},
+      {dx:0,dy:1,view:"back"}, {dx:-1,dy:0,view:"left"}
+    ];
+    polygonEdges(floor).forEach(([a,b],index) => {
+      const {dx,dy,view} = sides[index];
+      const nearby = cells.get([x+dx,y+dy].join());
+      const lowA = nearby?.height(...a) ?? 0;
+      const lowB = nearby?.height(...b) ?? 0;
+      const highA = height(...a), highB = height(...b);
+      if (highA <= lowA && highB <= lowB) return;
+      const wall = [[...a,lowA],[...b,lowB],[...b,highB],[...a,highA]];
+      const points = wall.filter((p,i) => p.join() !== wall[(i+1)%4].join());
+      faces.push({cell,points,normal:[dx,dy,0],view});
+    });
+  }
+
+  // Divide las aristas largas en los vértices comunes antes de descartar las uniones coplanarias.
+  const vertices = [...new Map(faces.flatMap(face => face.points.map(point => [point.join(),point]))).values()];
+  const edgeFaces = new Map();
+  faces.forEach(face => {
+    face.edges = [];
+    for (const [a,b] of polygonEdges(face.points)) {
+      const delta = b.map((value,i) => value-a[i]);
+      const lengthSquared = dot(delta,delta);
+      const points = vertices.map(point => {
+        const t = dot(point.map((value,i) => value-a[i]),delta)/lengthSquared;
+        return {point,t};
+      }).filter(({point,t}) => t >= 0 && t <= 1 && point.every((v,i) => Math.abs(v-a[i]-t*delta[i]) < .001))
+        .sort((a,b) => a.t-b.t);
+      points.slice(1).forEach(({point},index) => {
+        const edge = [points[index].point,point];
+        const key = lineKey(edge);
+        const owners = edgeFaces.get(key) ?? {edge,faces:[]};
+        owners.faces.push(face);
+        edgeFaces.set(key,owners);
+      });
+    }
+  });
+  for (const {edge,faces:owners} of edgeFaces.values()) {
+    if (owners.every(face => face.normal.join() === owners[0].normal.join())) continue;
+    owners.forEach(face => face.edges.push(edge));
+  }
+  return {faces,ramps};
+}
+
+const inclinedModels = Object.fromEntries(Object.entries(inclinedPieces)
+  .map(([key,piece]) => [key,inclinedGeometry(piece)]));
+
+const viewEyes = {front:[0,-1,0],right:[1,0,0],top:[0,0,1]};
+
+function visibleInclinedFaces(model, eye) {
+  const depth = ({cell}) => cell.x*eye[0] + cell.y*eye[1];
+  return model.faces.filter(({normal}) => dot(normal,eye)> .00001).sort((a,b) => depth(a)-depth(b));
+}
+
+function hatchIncline(pen, project, ramp, lineWidth) {
+  const [lowA,lowB,highB,highA] = ramp.corners;
+  pen.save();
+  polygonPath(pen,ramp.corners.map(project));
+  pen.clip();
+  pen.fillStyle = "#eef7f4";
+  pen.fill();
+  pen.lineWidth = lineWidth;
+  const stripes = Math.ceil(Math.hypot(...lowA.map((v,i) => lowB[i]-v))*5);
+  for (let i=-2; i<=stripes; i++) {
+    pen.strokeStyle = i%2 === 0 ? colors[ramp.view] : colors.top;
+    pen.beginPath();
+    pen.moveTo(...project(interpolate(lowA,lowB,i/stripes)));
+    pen.lineTo(...project(interpolate(highA,highB,(i+2)/stripes)));
+    pen.stroke();
+  }
+  pen.restore();
+}
+
+function paintInclinedFaces(pen, project, faces, lineWidth, view) {
+  pen.lineJoin = "round";
+  pen.lineCap = "round";
+  for (const face of faces) {
+    const fill = modelFaceFill(face.view,"right");
+    polygonPath(pen,face.points.map(project));
+    pen.fillStyle = fill;
+    pen.fill();
+    pen.strokeStyle = fill;
+    pen.lineWidth = .7;
+    pen.stroke();
+    if (face.ramp) {
+      pen.save();
+      pen.clip();
+      hatchIncline(pen,project,face.ramp,lineWidth);
+      pen.restore();
+    }
+    pen.lineWidth = lineWidth;
+    pen.strokeStyle = view ? colors[view] : colors.edge;
+    pen.beginPath();
+    for (const [a,b] of face.edges) {
+      pen.moveTo(...project(a));
+      pen.lineTo(...project(b));
+    }
+    pen.stroke();
+  }
+}
+
+function drawInclinedView(pen, direction, move) {
+  const {offset,size} = viewGrid;
+  const model = inclinedModels[exercise];
+  const project = ([x,y,z]) => [
+    offset+(direction === "right" ? y : x)*size,
+    offset+(3-(direction === "top" ? y : z))*size
+  ];
+  paintInclinedFaces(pen,project,visibleInclinedFaces(model,viewEyes[direction]),3.8,direction);
+  pen.globalAlpha = .55;
+  drawViewGrid(pen);
+  pen.globalAlpha = 1;
+  if (!move) return;
+  const ramp = model.ramps[move[4]];
+  const [a,b,c,d] = ramp.corners;
+  const edges = direction === "top" || direction === ramp.view ? polygonEdges(ramp.corners) : [[a,d],[b,c]];
+  pen.beginPath();
+  for (const [start,end] of edges) {
+    pen.moveTo(...project(start));
+    pen.lineTo(...project(end));
+  }
+  pen.strokeStyle = colors.added;
+  pen.lineWidth = 7;
+  // En la vista de canto, una diagonal puede estar detrás de otra cara.
+  pen.setLineDash(direction !== "top" && direction !== ramp.view ? [10,7] : []);
+  pen.stroke();
+  pen.setLineDash([]);
 }
 
 function projectedFaces(key, eye) {
@@ -901,6 +1127,68 @@ function drawRampLesson(project,width,height,now) {
   if (drawingStart !== null) schedule();
 }
 
+function onSegment(point,[a,b]) {
+  const delta = b.map((v,i) => v-a[i]);
+  const t = dot(point.map((v,i) => v-a[i]),delta)/dot(delta,delta);
+  return t >= 0 && t <= 1 && point.every((v,i) => Math.abs(v-a[i]-t*delta[i]) < .001);
+}
+
+for (const model of Object.values(inclinedModels)) {
+  const visibleEdges = new Map(visibleInclinedFaces(model,[1,-1,1])
+    .flatMap(face => face.edges.map(edge => [lineKey(edge),edge])));
+  const rampEdges = model.ramps.flatMap(ramp => polygonEdges(ramp.corners));
+  model.constructionEdges = [...visibleEdges.values()].filter(edge =>
+    !rampEdges.some(border => edge.every(point => onSegment(point,border))));
+}
+
+function drawInclinedLesson(project, now) {
+  drawTemplate(project,true);
+  if (step === 0) return;
+
+  const model = inclinedModels[exercise];
+  const move = currentMove();
+  const t = drawingStart === null ? 1 : progress(now,drawingStart,1250);
+  const place = edges => edges.map(edge => edge.map(project));
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (step === copyStep) {
+    const outline = model.constructionEdges.map(([a,b]) => [a,interpolate(a,b,ease(t))]);
+    drawSegments(place(outline),colors.edge,2.3);
+  } else if (move) {
+    drawSegments(place(model.constructionEdges),"#8c9aac",2.1);
+    for (const ramp of model.ramps.slice(0,move[4])) {
+      hatchIncline(ctx,project,ramp,1.7);
+      drawSegments(place(polygonEdges(ramp.corners)),colors.edge,2.3);
+    }
+    const ramp = model.ramps[move[4]];
+    const [a,b,c,d] = ramp.corners;
+    const initial = [a,b,[c[0],c[1],b[2]],[d[0],d[1],a[2]]];
+    const motion = moveReady ? 0 : drawingStart === null ? 1 : progress(now,drawingStart+movePreview,moveDuration);
+    const corners = initial.map((point,i) => interpolate(point,ramp.corners[i],ease(motion)));
+    if (motion < 1) {
+      drawSegments(place(polygonEdges(ramp.corners)),colors.added,2,[5,5]);
+      const middle = interpolate(initial[2],initial[3],.5);
+      const target = interpolate(c,d,.5);
+      drawArrow(project(middle),project(target),colors.added,2.8);
+    } else {
+      hatchIncline(ctx,project,ramp,1.7);
+    }
+    drawSegments(place(polygonEdges(corners)),colors.added,3);
+    if (motion === 1 && drawingStart !== null) {
+      drawingStart = null;
+      updateMoveAction();
+    }
+  } else {
+    ctx.save();
+    ctx.globalAlpha = .35+.65*ease(t);
+    paintInclinedFaces(ctx,project,visibleInclinedFaces(model,[1,-1,1]),2);
+    ctx.restore();
+  }
+  if (!move && t === 1) drawingStart = null;
+  if (drawingStart !== null) schedule();
+}
+
 function drawMove(project, drawing, move, now) {
   const color = colors[move[3]];
   const group = drawing.groups.get(move);
@@ -1013,17 +1301,17 @@ function render(now) {
   };
   drawFrontArrow(project,eye);
   if (!modelMode) {
-    if (rightProfile) drawRampLesson(project,width,height,now);
+    if (inclinedModels[exercise]) drawInclinedLesson(project,now);
+    else if (rightProfile) drawRampLesson(project,width,height,now);
     else drawLesson(project,width,height,now);
     return;
   }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  const visibleFaces = rightProfile
-    ? rampFaces.filter(({normal}) => dot(normal,eye) > .00001)
-    : projectedFaces(exercise,eye);
-  if (rightProfile) drawRampModel(project,visibleFaces);
-  else drawBlockModel(project,visibleFaces,selectedView && !cameraMove);
+  const model = inclinedModels[exercise];
+  if (model) paintInclinedFaces(ctx,project,visibleInclinedFaces(model,eye),1.8);
+  else if (rightProfile) drawRampModel(project,rampFaces.filter(({normal}) => dot(normal,eye) > .00001));
+  else drawBlockModel(project,projectedFaces(exercise,eye),selectedView && !cameraMove);
   if (cameraMove) schedule();
 }
 
