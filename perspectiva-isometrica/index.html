@@ -1185,27 +1185,56 @@ function buildInclinedDrawing(model) {
   return {copies,placed,groups,missing,outline};
 }
 
-function remainingViewGuides(drawing, groups) {
-  return Object.entries(traceViews).map(([view,{project,source}]) => {
-    const removed = groups.filter(move => move[3] === view).flatMap(move => drawing.groups.get(move[4]));
-    const guides = drawing.copies[view].map(edge => edge.map(point => source(project(point))));
-    return guides.flatMap(guide => {
-      const occupied = removed.map(({from}) => edgeRange(from,guide)).filter(Boolean);
-      const marks = [0,1,...occupied.flat()].sort((a,b) => a-b);
-      return marks.slice(1).flatMap((end,index) => {
-        const start = marks[index];
-        const mid = (start+end)/2;
-        return end-start > .00001 && !occupied.some(([a,b]) => a <= mid && mid <= b)
-          ? [[interpolate(...guide,start),interpolate(...guide,end)]]
-          : [];
-      });
+function subtractEdges(edges, removed) {
+  return edges.flatMap(edge => {
+    const occupied = removed.map(line => edgeRange(line,edge)).filter(Boolean);
+    const marks = [0,1,...occupied.flat()].sort((a,b) => a-b);
+    return marks.slice(1).flatMap((end,index) => {
+      const start = marks[index];
+      const mid = (start+end)/2;
+      return end-start > .00001 && !occupied.some(([a,b]) => a <= mid && mid <= b)
+        ? [[interpolate(...edge,start),interpolate(...edge,end)]]
+        : [];
     });
-  }).flat();
+  });
+}
+
+function remainingViewGuides(drawing, groups) {
+  return Object.entries(traceViews).flatMap(([view,{project,source}]) => {
+    const removed = groups.filter(move => move[3] === view).flatMap(move => [
+      ...drawing.groups.get(move[4]).map(({from}) => from),
+      ...(move[5] ?? [])
+    ]);
+    const guides = drawing.copies[view].map(edge => edge.map(point => source(project(point))));
+    return subtractEdges(guides,removed);
+  });
+}
+
+function hConstructionSteps(drawing) {
+  const rectangle = polygonEdges([[0,0,1],[3,0,1],[3,0,2],[0,0,2]]);
+  const shifted = rectangle.map(from => ({from,to:from.map(point => offset(point,[0,1,0]))}));
+  drawing.groups.set("front:1",shifted);
+  drawing.missing = subtractEdges(drawing.missing,shifted.map(({to}) => to));
+
+  return [
+    ["Escalón del alzado", "Mueve el rectángulo del escalón",
+      "Lleva el rectángulo azul completo una casilla a la derecha por la cuadrícula, hasta la primera línea verde de la planta. El rectángulo inferior se queda en su sitio.",
+      "front", "front:1"],
+    ["Borde alto del alzado", "Coloca el borde alto y su diagonal",
+      "Sigue el borde azul de arriba: el tramo horizontal y la diagonal de la derecha. Llévalos dos casillas hacia el fondo, hasta la segunda línea verde de la planta.",
+      "front", "front:2", [[[0,0,3],[0,0,2]], [[1,0,3],[1,0,2]], [[0,0,2],[3,0,2]]]],
+    ["Borde alto del perfil", "Coloca la arista superior del perfil",
+      "Mueve la arista naranja una casilla hacia la izquierda, hasta el tramo verde de la planta. Al moverla desaparecen las dos verticales de la parte superior.",
+      "right", "right:1", [[[3,2,2],[3,2,3]], [[3,3,2],[3,3,3]]]],
+    ["Diagonal del perfil", "Coloca la diagonal que sube desde el escalón",
+      "Lleva la diagonal naranja dos casillas hacia la izquierda. La línea verde de la planta marca dónde empieza y acaba.",
+      "right", "right:2"]
+  ];
 }
 
 const inclinedDrawings = Object.fromEntries(Object.entries(inclinedModels).map(([key,model]) => {
   const drawing = buildInclinedDrawing(model);
-  moves[key] = [...drawing.groups.keys()].sort().map(group => {
+  moves[key] = key === "h" ? hConstructionSteps(drawing) : [...drawing.groups.keys()].sort().map(group => {
     const [view,distance] = group.split(":");
     const isFront = view === "front";
     const label = isFront ? "Alzado" : "Perfil";
@@ -1284,6 +1313,12 @@ function drawInclinedLesson(project,width,height,now) {
     const old = moves[exercise].slice(0,index).flatMap(item => drawing.groups.get(item[4]).map(({to}) => to));
     drawSegments(place(drawing.guides[index]),"#a0aec0",1.7);
     drawSegments(place([...drawing.placed,...old]),colors.edge,2.2);
+    if (move[5] && motion < 1) {
+      ctx.save();
+      ctx.globalAlpha = 1-ease(motion);
+      drawSegments(place(move[5]),"#a0aec0",1.7);
+      ctx.restore();
+    }
     if (motion < 1) {
       drawSegments(place(group.map(({to}) => to)),"#edf3fa",5);
       drawSegments(place(group.map(({to}) => to)),color,2.6,[5,5]);
