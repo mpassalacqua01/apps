@@ -112,6 +112,7 @@
     .viewer-head h2 { font-size:.95rem; }
     .move-key { font-size:.7rem; gap:5px 8px; }
     .move-key span::before { width:13px; }
+    .scene-help { top:6px; bottom:auto; }
     #model { height:clamp(190px,62vw,340px); }
     .lesson { padding:8px 10px 10px; display:flex; flex-direction:column; }
     .steps { order:3; margin-top:9px; }
@@ -819,16 +820,7 @@ function drawArrow(from, to, color, width) {
   ctx.restore();
 }
 
-function drawArrowLabel(label, x, y, alignment) {
-  ctx.save();
-  ctx.font = "700 13px Inter, system-ui, sans-serif";
-  ctx.fillStyle = colors.front;
-  ctx.textAlign = alignment;
-  ctx.fillText(label,x,y);
-  ctx.restore();
-}
-
-function drawFrontArrow(project, eye) {
+function drawFrontArrow(project, eye, width, height) {
   // La flecha se apoya en z = 0, igual que la base de la pieza.
   if (Math.abs(eye[2]) < .06) return;
   const centerX = drawings[exercise]?.centerX ?? 1.5;
@@ -836,12 +828,28 @@ function drawFrontArrow(project, eye) {
     [0,-.15],[.19,-.44],[.065,-.44],[.065,-.95],
     [-.065,-.95],[-.065,-.44],[-.19,-.44]
   ];
-  polygonPath(ctx,outline.map(([x,y]) => project([centerX+x,y,0])));
+  const points = outline.map(([x,y]) => project([centerX+x,y,0]));
+  polygonPath(ctx,points);
   ctx.fillStyle = colors.front;
   ctx.fill();
   if (eye[1] <= 0) {
-    const [x,y] = project([centerX,-1.08,0]);
-    drawArrowLabel("Alzado",x,y+4,"center");
+    const [tailX,tailY] = project([centerX,-.95,0]);
+    const labelTop = Math.max(...points.map(([,y]) => y)) + 8;
+    ctx.save();
+    ctx.font = "700 13px Inter, system-ui, sans-serif";
+    if (labelTop + 15 <= height) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Alzado",tailX,labelTop);
+    } else {
+      const right = Math.max(...points.map(([x]) => x));
+      const fitsRight = right + 8 + ctx.measureText("Alzado").width <= width;
+      const left = Math.min(...points.map(([x]) => x));
+      ctx.textAlign = fitsRight ? "left" : "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Alzado",fitsRight ? right+8 : left-8,tailY);
+    }
+    ctx.restore();
   }
 }
 
@@ -1007,7 +1015,7 @@ function render(now) {
     const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
   };
-  drawFrontArrow(project,eye);
+  drawFrontArrow(project,eye,width,height);
   if (!modelMode) {
     if (rightProfile) drawRampLesson(project,width,height,now);
     else drawLesson(project,width,height,now);
