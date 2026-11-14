@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la f de la ficha de perspectiva isométrica de 3.º de ESO.">
+<meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la g de la ficha de perspectiva isométrica de 3.º de ESO.">
 <title>De las vistas a la pieza · 3.º ESO</title>
 <style>
   :root {
@@ -45,8 +45,9 @@
   .view-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .view { min-width:0; padding:8px 6px 9px; border:1px solid var(--line); border-radius:10px; background:#fbfcfe; }
   .view[data-view="front"] { --view:#2451a3; --tint:#eaf1ff; --view-border:#aac3ee; }
-  .view[data-view="left"] { --view:#9a410e; --tint:#fff1e7; --view-border:#e8ba99; }
+  .view[data-view="left"], .view[data-view="right"] { --view:#9a410e; --tint:#fff1e7; --view-border:#e8ba99; }
   .view[data-view="top"] { --view:#11705e; --tint:#e5f5ef; --view-border:#a3d8ca; }
+  .view[data-view="right"]:not([hidden]) ~ .view[data-view="top"] { grid-column:2; }
   .view:hover, .view.current, .view[aria-pressed="true"] { border-color:var(--view-border); background:var(--tint); }
   .view[aria-pressed="true"] { box-shadow:inset 0 0 0 1px var(--view-border); }
   .view canvas { width:min(100%,110px); aspect-ratio:1; display:block; margin:0 auto 4px; }
@@ -144,12 +145,14 @@
     <button class="exercise" type="button" data-exercise="d" aria-label="Ejercicio d" aria-pressed="false">d</button>
     <button class="exercise" type="button" data-exercise="e" aria-label="Ejercicio e" aria-pressed="false">e</button>
     <button class="exercise" type="button" data-exercise="f" aria-label="Ejercicio f" aria-pressed="false">f</button>
+    <button class="exercise" type="button" data-exercise="g" aria-label="Ejercicio g" aria-pressed="false">g</button>
   </nav>
   <div class="workspace">
     <section class="panel views" aria-labelledby="views-title">
       <h2 id="views-title">Vistas de la ficha</h2>
       <p class="hint">Alzado en azul, perfil izquierdo en naranja y planta en verde.</p>
       <div class="view-grid">
+        <button type="button" class="view" data-view="right" aria-pressed="false" hidden><canvas width="220" height="220" aria-hidden="true"></canvas><span>Perfil derecho</span></button>
         <button type="button" class="view" data-view="front" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Alzado</span></button>
         <button type="button" class="view" data-view="left" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Perfil izquierdo</span></button>
         <button type="button" class="view current" data-view="top" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Planta</span></button>
@@ -255,12 +258,26 @@ const moves = {
       "El tramo verde señala el borde exterior de la fila del fondo. Desplaza el rectángulo naranja una casilla hacia la derecha.", "left", 1],
     ["Perfil bajo", "Coloca el lateral del brazo bajo",
       "El tramo verde recorre las dos casillas delanteras. Mueve el rectángulo naranja dos casillas hacia la derecha.", "left", 2]
+  ],
+  g: [
+    ["Diagonal", "Lleva la diagonal al otro lado",
+      "La diagonal sube una casilla en el perfil derecho. Pulsa «Mover aristas» para copiarla tres casillas a lo ancho, hasta el lado opuesto.", "right"]
   ]
 };
 const lessons = Object.fromEntries(Object.entries(moves).map(([key, list]) => [key, [inspectViews, first, ...list, corners, finish]]));
-const colors = {front:"#2451a3", left:"#9a410e", top:"#11705e", added:"#733ea1", edge:"#233956"};
+lessons.g = [
+  ["Vistas", "Localiza la cara inclinada",
+    "La franja azul y verde del alzado y la de la planta representan la misma cara. En el perfil derecho, esa cara se ve de canto y aparece como una diagonal."],
+  ["Copiar", "Copia el alzado y el perfil derecho",
+    "Coloca el alzado azul en la cara izquierda de la plantilla y el perfil naranja en la cara derecha. El alzado es una guía para leer las alturas."],
+  ...moves.g,
+  ["Cerrar", "Une los extremos de las diagonales",
+    "Une los dos extremos bajos entre sí y haz lo mismo con los altos. Queda delimitada la rampa. El rayado azul y verde permite reconocerla al girar la pieza."]
+];
+const colors = {front:"#2451a3", left:"#9a410e", right:"#9a410e", top:"#11705e", added:"#733ea1", edge:"#233956"};
 const iso = [-Math.PI / 4, Math.atan(1 / Math.sqrt(2))];
-const angles = {front:[0,0], left:[-Math.PI/2,0], top:[0,Math.PI/2]};
+const rightIso = [-iso[0],iso[1]];
+const angles = {front:[0,0], left:[-Math.PI/2,0], right:[Math.PI/2,0], top:[0,Math.PI/2]};
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const canvas = document.querySelector("#model");
 const ctx = canvas.getContext("2d");
@@ -275,6 +292,7 @@ const modelToggle = document.querySelector("#isometric");
 const help = document.querySelector(".scene-help");
 const title = document.querySelector("#model-title");
 const moveKey = document.querySelector("#move-key");
+const moveLabel = moveKey.firstElementChild;
 const moveAction = document.querySelector("#move-action");
 const copyStep = 1;
 const firstMoveStep = copyStep + 1;
@@ -295,6 +313,12 @@ let selectedView = null;
 let frame;
 let drag;
 
+const viewGrid = {offset:14, size:64};
+
+function useRightProfile() {
+  return exercise === "g";
+}
+
 function solidCells(key) {
   const cells = new Map();
   exercises[key].forEach((row, y) => row.forEach((height, x) => {
@@ -313,21 +337,8 @@ function viewDepth(key, direction) {
   }));
 }
 
-function drawView(button, move) {
-  const surface = button.querySelector("canvas");
-  const pen = surface.getContext("2d");
-  const offset = 14;
-  const size = 64;
-  const direction = button.dataset.view;
-  const data = viewDepth(exercise, direction);
-  const color = colors[direction];
-  pen.clearRect(0,0,220,220);
-  pen.fillStyle = faceFills[direction];
-  pen.globalAlpha = move ? .25 : .72;
-  data.forEach((row, y) => row.forEach((depth, x) => {
-    if (depth >= 0) pen.fillRect(offset+x*size,offset+y*size,size,size);
-  }));
-  pen.globalAlpha = 1;
+function drawViewGrid(pen) {
+  const {offset,size} = viewGrid;
   pen.strokeStyle = "#8190a3";
   pen.lineWidth = 1.6;
   pen.setLineDash([3,6]);
@@ -339,6 +350,26 @@ function drawView(button, move) {
   }
   pen.stroke();
   pen.setLineDash([]);
+}
+
+function drawView(button, move) {
+  const pen = button.querySelector("canvas").getContext("2d");
+  const direction = button.dataset.view;
+  pen.clearRect(0,0,220,220);
+  if (useRightProfile()) {
+    drawRampView(pen,direction,move);
+    return;
+  }
+  const {offset,size} = viewGrid;
+  const data = viewDepth(exercise, direction);
+  const color = colors[direction];
+  pen.fillStyle = faceFills[direction];
+  pen.globalAlpha = move ? .25 : .72;
+  data.forEach((row, y) => row.forEach((depth, x) => {
+    if (depth >= 0) pen.fillRect(offset+x*size,offset+y*size,size,size);
+  }));
+  pen.globalAlpha = 1;
+  drawViewGrid(pen);
   pen.strokeStyle = move ? "#8c99aa" : color;
   pen.lineWidth = 4;
   pen.lineCap = "round";
@@ -371,6 +402,7 @@ function drawView(button, move) {
 }
 
 function updateUI() {
+  const rightProfile = useRightProfile();
   exerciseButtons.forEach(button => button.setAttribute("aria-pressed", button.dataset.exercise === exercise));
   steps.style.setProperty("--steps", lessons[exercise].length);
   const stepLabels = lessons[exercise].map(([label]) => label);
@@ -392,10 +424,13 @@ function updateUI() {
   });
   viewButtons.forEach(button => {
     const view = button.dataset.view;
-    const reference = move && view === "top";
+    button.hidden = rightProfile ? view === "left" : view === "right";
+    if (button.hidden) return;
+    const reference = move && !rightProfile && view === "top";
     button.disabled = !modelMode;
     button.classList.toggle("current", Boolean(reference) || move?.[3] === view || (!modelMode && step === copyStep && view !== "top"));
-    if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
+    if (rightProfile && view !== "right") button.setAttribute("aria-label", `${button.textContent}, cara inclinada rayada en azul y verde`);
+    else if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
     else button.removeAttribute("aria-label");
     drawView(button, move);
   });
@@ -404,16 +439,21 @@ function updateUI() {
   document.querySelector("#instruction-text").textContent = instruction;
   previous.disabled = step === 0;
   next.disabled = step === lastStep();
-  next.textContent = step === 0 ? "Copiar vistas →" : "Siguiente →";
+  next.textContent = step === 0 ? "Copiar vistas →" : rightProfile && step === 2 ? "Unir extremos →" : "Siguiente →";
   replay.disabled = modelMode || step === 0;
   modelToggle.hidden = step !== lastStep();
   moveKey.hidden = !move;
+  moveLabel.textContent = rightProfile ? "Diagonal que se mueve" : "Aristas que se mueven";
   if (move) moveKey.style.setProperty("--move-color", colors[move[3]]);
   updateMoveAction();
   modelToggle.textContent = modelMode ? "Volver al dibujo" : "Ver en 3D";
   help.hidden = !modelMode;
   title.textContent = modelMode ? "Pieza en 3D" : "Plantilla isométrica";
-  document.querySelector(".hint").textContent = modelMode
+  document.querySelector(".hint").textContent = rightProfile
+    ? modelMode
+      ? "Pulsa una vista para girar la pieza. Busca la misma cara rayada en el alzado y en la planta."
+      : "Azul + verde · Cara inclinada visible en el alzado y en la planta."
+    : modelMode
     ? "Azul para el alzado, naranja para el perfil y verde para la planta. Pulsa una vista para mirar la pieza desde esa dirección."
     : move
       ? "Las aristas que se mueven están en azul o naranja. El trazo verde de la planta marca dónde colocarlas."
@@ -478,7 +518,7 @@ viewButtons.forEach(button => button.addEventListener("click", () => setCamera(a
 modelToggle.addEventListener("click", () => {
   stop();
   modelMode = !modelMode;
-  camera = [...iso];
+  camera = [...(useRightProfile() ? rightIso : iso)];
   cameraMove = undefined;
   selectView(null);
   drawingStart = null;
@@ -528,10 +568,104 @@ const faces = [
   {n:[0,0,1], p:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]], view:"top"},
   {n:[0,0,-1], p:[[0,0,0],[1,0,0],[1,1,0],[0,1,0]], view:"top"}
 ];
-const faceFills = {front:"#79a5ed", left:"#eca66d", top:"#77c9a5"};
+const faceFills = {front:"#79a5ed", left:"#eca66d", right:"#eca66d", top:"#77c9a5"};
 const dot = (a,b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 const interpolate = (a,b,t) => a.map((v,i) => v+(b[i]-v)*t);
 const offset = (a,b) => a.map((v,i) => v+b[i]);
+
+// La g es un prisma de 3 casillas de ancho con este perfil derecho (fondo, altura).
+const rampProfile = [[0,0],[3,0],[3,3],[2,3],[1,2],[0,2]];
+const rampSides = ["top","front","top","ramp","top","front"];
+const rampFaces = rampProfile.map(([y,z], index) => {
+  const [endY,endZ] = rampProfile[(index+1)%rampProfile.length];
+  return {
+    normal:[0,endZ-z,y-endY],
+    points:[[0,y,z],[3,y,z],[3,endY,endZ],[0,endY,endZ]],
+    view:rampSides[index]
+  };
+}).concat([
+  {normal:[-1,0,0], points:rampProfile.map(([y,z]) => [0,y,z]), view:"left"},
+  {normal:[1,0,0], points:rampProfile.map(([y,z]) => [3,y,z]), view:"right"}
+]);
+const rampFace = rampFaces.find(face => face.view === "ramp");
+
+function polygonEdges(points) {
+  return points.map((point,index) => [point,points[(index+1)%points.length]]);
+}
+
+function polygonPath(pen, points) {
+  pen.beginPath();
+  pen.moveTo(...points[0]);
+  for (const point of points.slice(1)) pen.lineTo(...point);
+  pen.closePath();
+}
+
+function hatchRamp(pen, project, lineWidth) {
+  polygonPath(pen,rampFace.points.map(project));
+  pen.save();
+  pen.clip();
+  pen.fillStyle = "#eef7f4";
+  pen.fill();
+  pen.lineWidth = lineWidth;
+  for (let index = -2; index < 15; index++) {
+    const x = index*.23;
+    pen.strokeStyle = index%2 === 0 ? colors.front : colors.top;
+    pen.beginPath();
+    pen.moveTo(...project([x,1,2]));
+    pen.lineTo(...project([x+.44,2,3]));
+    pen.stroke();
+  }
+  pen.restore();
+}
+
+function drawRampView(pen, direction, move) {
+  const {offset,size} = viewGrid;
+  const project = ([u,v]) => [offset+u*size, offset+(3-v)*size];
+  const rectangle = [[0,0],[3,0],[3,3],[0,3]];
+  const outline = direction === "right" ? rampProfile : rectangle;
+  const screen = outline.map(project);
+  polygonPath(pen,screen);
+  pen.globalAlpha = .58;
+  pen.fillStyle = faceFills[direction];
+  pen.fill();
+  pen.globalAlpha = 1;
+  if (direction === "front") hatchRamp(pen,([x,,z]) => project([x,z]),3.5);
+  if (direction === "top") hatchRamp(pen,([x,y]) => project([x,y]),3.5);
+  drawViewGrid(pen);
+  pen.strokeStyle = colors[direction];
+  pen.lineWidth = 4;
+  pen.lineJoin = "round";
+  polygonPath(pen,screen);
+  pen.stroke();
+  const folds = direction === "front" ? [2] : direction === "top" ? [1,2] : [];
+  for (const fold of folds) {
+    pen.beginPath();
+    pen.moveTo(...project([0,fold]));
+    pen.lineTo(...project([3,fold]));
+    pen.stroke();
+  }
+  if (move && direction === "right") {
+    pen.lineWidth = 9;
+    pen.lineCap = "round";
+    pen.beginPath();
+    pen.moveTo(...project([1,2]));
+    pen.lineTo(...project([2,3]));
+    pen.stroke();
+  }
+}
+
+function drawRampModel(project, eye) {
+  for (const face of rampFaces.filter(({normal}) => dot(normal,eye) > .00001)) {
+    const points = face.points.map(project);
+    if (face.view === "ramp") hatchRamp(ctx,project,2);
+    else {
+      polygonPath(ctx,points);
+      ctx.fillStyle = faceFills[face.view];
+      ctx.fill();
+    }
+    drawSegments(polygonEdges(points),colors.edge,1.8);
+  }
+}
 
 function projectedFaces(key, eye) {
   const cells = solidCells(key);
@@ -633,7 +767,8 @@ function stroke(a,b) {
   ctx.lineTo(...b);
 }
 
-function drawTemplate(project) {
+function drawTemplate(project, rightProfile = false) {
+  const profileX = rightProfile ? 3 : 0;
   ctx.lineWidth = 1;
   ctx.strokeStyle = "#9eafc4";
   ctx.setLineDash([2,5]);
@@ -642,9 +777,9 @@ function drawTemplate(project) {
     stroke(project([i,0,0]),project([i,3,0]));
     stroke(project([0,i,0]),project([3,i,0]));
     stroke(project([i,0,0]),project([i,0,3]));
-    stroke(project([0,i,0]),project([0,i,3]));
+    stroke(project([profileX,i,0]),project([profileX,i,3]));
     stroke(project([0,0,i]),project([3,0,i]));
-    stroke(project([0,0,i]),project([0,3,i]));
+    stroke(project([profileX,0,i]),project([profileX,3,i]));
   }
   for (const [a,b] of [
     [[3,0,3],[3,3,3]],[[0,3,3],[3,3,3]],[[3,3,0],[3,3,3]],
@@ -666,7 +801,9 @@ function drawTemplate(project) {
   ctx.stroke();
   ctx.font = "700 13px Inter, system-ui, sans-serif";
   ctx.fillStyle = colors.front;
-  ctx.fillText("Alzado",from[0]+7,from[1]+12);
+  ctx.textAlign = rightProfile ? "right" : "left";
+  ctx.fillText("Alzado",from[0]+(rightProfile ? -7 : 7),from[1]+12);
+  ctx.textAlign = "start";
 }
 
 function drawSegments(segments, color, width, dash = []) {
@@ -677,6 +814,60 @@ function drawSegments(segments, color, width, dash = []) {
   for (const segment of segments) stroke(...segment);
   ctx.stroke();
   ctx.setLineDash([]);
+}
+
+const rampDiagonal = [[3,1,2],[3,2,3]];
+const oppositeDiagonal = rampDiagonal.map(([,y,z]) => [0,y,z]);
+const rampLimits = rampDiagonal.map((point,index) => [point,oppositeDiagonal[index]]);
+const rampVisibleEdges = [...new Map(rampFaces
+  .filter(({normal}) => dot(normal,[1,-1,1]) > 0)
+  .flatMap(({points}) => polygonEdges(points).map(edge => [lineKey(edge),edge]))).values()];
+const rampOpenEdges = rampVisibleEdges.filter(edge =>
+  ![rampDiagonal,oppositeDiagonal,...rampLimits].some(line => lineKey(edge) === lineKey(line)));
+
+function drawRampLesson(project,width,height,now) {
+  drawTemplate(project,true);
+  if (step === 0) return;
+  const t = drawingStart === null ? 1 : progress(now,drawingStart,step === copyStep ? 1850 : 1650);
+  const place = segments => segments.map(segment => segment.map(project));
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  if (step === copyStep) {
+    const copyPoint = ([x,y,z],front) => interpolate(
+      [width*(front ? .28 : .72)+((front ? x : y)-1.5)*height*.115,height*.56+(1.5-z)*height*.115],
+      project([x,y,z]),ease(front ? Math.min(1,t*1.37) : Math.max(0,(t-.27)/.73))
+    );
+    const lowFace = [[0,0,0],[3,0,0],[3,0,2],[0,0,2]];
+    const frontGuide = [[[0,0,2],[0,0,3]],[[0,0,3],[3,0,3]],[[3,0,3],[3,0,2]]];
+    drawSegments(polygonEdges(lowFace).map(line => line.map(p => copyPoint(p,true))),colors.front,2.65);
+    drawSegments(frontGuide.map(line => line.map(p => copyPoint(p,true))),colors.front,1.6,[4,5]);
+    drawSegments(polygonEdges(rampProfile.map(([y,z]) => [3,y,z])).map(line => line.map(p => copyPoint(p,false))),colors.right,2.65);
+  } else if (currentMove()) {
+    const motionStart = drawingStart === null ? null : drawingStart+movePreview;
+    const motion = moveReady ? 0 : motionStart === null ? 1 : progress(now,motionStart,moveDuration);
+    drawSegments(place(rampOpenEdges),"#8c9aac",2.1);
+    drawSegments(place([rampDiagonal]),colors.right,3);
+    if (motion < 1) {
+      drawSegments(place([oppositeDiagonal]),colors.right,2.5,[5,5]);
+      const start = project([3,2,3.23]), end = project([0,2,3.23]);
+      const angle = Math.atan2(end[1]-start[1],end[0]-start[0]);
+      const head = [-.49,.49].map(side => [end,[end[0]-9*Math.cos(angle+side),end[1]-9*Math.sin(angle+side)]]);
+      drawSegments([[start,end],...head],colors.right,1.8);
+    }
+    const diagonal = rampDiagonal.map((point,index) => interpolate(point,oppositeDiagonal[index],ease(motion)));
+    drawSegments(place([diagonal]),colors.right,4);
+    if (motion === 1 && drawingStart !== null) {
+      drawingStart = null;
+      updateMoveAction();
+    }
+  } else {
+    if (t === 1) hatchRamp(ctx,project,2);
+    drawSegments(place([...rampOpenEdges,rampDiagonal,oppositeDiagonal]),colors.edge,2.7);
+    const lines = rampLimits.map(([a,b]) => [a,interpolate(a,b,ease(t))]);
+    drawSegments(place(lines),t === 1 ? colors.edge : colors.added,3);
+  }
+  if (!currentMove() && t === 1) drawingStart = null;
+  if (drawingStart !== null) schedule();
 }
 
 function drawMove(project, drawing, move, now) {
@@ -781,7 +972,8 @@ function render(now) {
   }
   ctx.setTransform(ratio,0,0,ratio,0,0);
   ctx.clearRect(0,0,width,height);
-  const [yaw,pitch] = modelMode ? camera : iso;
+  const rightProfile = useRightProfile();
+  const [yaw,pitch] = modelMode ? camera : rightProfile ? rightIso : iso;
   const right = [Math.cos(yaw), Math.sin(yaw), 0];
   const eye = [Math.sin(yaw)*Math.cos(pitch), -Math.cos(yaw)*Math.cos(pitch), Math.sin(pitch)];
   const up = [-Math.sin(yaw)*Math.sin(pitch), Math.cos(yaw)*Math.sin(pitch), Math.cos(pitch)];
@@ -791,11 +983,17 @@ function render(now) {
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
   };
   if (!modelMode) {
-    drawLesson(project,width,height,now);
+    if (rightProfile) drawRampLesson(project,width,height,now);
+    else drawLesson(project,width,height,now);
     return;
   }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+  if (rightProfile) {
+    drawRampModel(project,eye);
+    if (cameraMove) schedule();
+    return;
+  }
   const straight = selectedView && !cameraMove;
   for (const face of projectedFaces(exercise,eye)) {
     const points = face.points.map(project);
