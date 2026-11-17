@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Dibuja en perspectiva isométrica los ejercicios de la a a la l de la ficha de perspectiva isométrica de 3.º de ESO.">
-<title>De las vistas a la pieza · 3.º ESO</title>
+<title>De las vistas a la pieza</title>
 <style>
   :root {
     color-scheme: light;
@@ -15,7 +15,7 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); }
   button { font:inherit; cursor:pointer; color:inherit; }
-  button:focus-visible, canvas:focus-visible, a:focus-visible {
+  button:focus-visible, canvas:focus-visible, a:focus-visible, select:focus-visible {
     outline:3px solid #2175d1; outline-offset:3px;
   }
   button:disabled { opacity:.45; cursor:default; }
@@ -132,6 +132,89 @@
     .exercise-bar strong { grid-column:1 / -1; }
     .exercise { min-width:0; }
   }
+  .lesson-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .toolbar-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .speed-label { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:.82rem; font-weight:650; }
+  #speed { font:inherit; color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 8px; min-height:36px; }
+  .lesson-toolbar .secondary { min-height:36px; }
+  .step-progress { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 9px; color:var(--muted); font-size:.8rem; font-weight:650; }
+  .progress-track { width:100px; height:5px; flex-shrink:0; background:#e5ebf5; border-radius:8px; overflow:hidden; }
+  .progress-fill { display:block; height:100%; background:var(--blue); }
+  .step::before { content:attr(data-number); display:block; font-size:.69rem; opacity:.75; }
+  .step[aria-current="step"] { box-shadow:inset 0 -2px var(--blue); }
+  .viewer-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  #reset-camera { background:#f2f6fc; }
+  .playback-note { color:var(--muted); font-size:.76rem; }
+  #play.paused { border-color:#d3a341; background:#fff7e5; color:#6f4a09; }
+  .controls > div { flex-wrap:wrap; }
+  body.board-mode header, body.board-mode footer { display:none; }
+  body.board-mode main.wrap { margin-top:14px; width:min(1536px,calc(100% - 40px)); }
+  body.board-mode #model { height:clamp(240px,calc(100dvh - 530px),560px); }
+  body.board-mode .view canvas { width:min(100%,135px); }
+  body.board-mode .instruction strong { font-size:1.13rem; }
+  body.board-mode .instruction p { font-size:1rem; }
+  @media (min-width:901px) {
+    .steps:is([data-exercise="h"],[data-exercise="k"]) { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  }
+  @media (max-width:730px) {
+    .lesson-toolbar { margin-top:8px; gap:6px; }
+    .lesson-toolbar .secondary, #speed { min-height:44px; }
+    .step-progress { order:2; margin-top:9px; margin-bottom:0; }
+    .steps { margin-top:5px; }
+    .viewer-actions { gap:4px; }
+    body.board-mode main.wrap { width:calc(100% - 20px); margin-top:8px; }
+    body.board-mode #model { height:clamp(240px,65vw,380px); }
+    body.board-mode .view canvas { width:min(100%,70px); }
+    .playback-note { width:100%; }
+  }
+  .method-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 12px; margin-top:12px; background:#fff; border:1px solid var(--line); border-radius:12px; }
+  .method-bar strong { font-size:.84rem; }
+  .method-options { display:flex; gap:5px; flex-wrap:wrap; }
+  .method-option { background:#f3f5fa; border:1px solid transparent; border-radius:8px; padding:7px 12px; font-weight:700; font-size:.85rem; min-height:38px; }
+  .method-option[aria-pressed="true"] { background:#eee8fb; border-color:#bca6e3; color:#543283; }
+  .coded-plan { border-top:1px solid var(--line); padding-top:12px; margin-top:12px; }
+  .coded-plan h3 { margin:0; font-size:.98rem; }
+  .coded-intro { margin:4px 0 8px; font-size:.82rem; color:var(--muted); }
+  .coded-grid { display:grid; grid-template-columns:22px repeat(3,minmax(0,1fr)); gap:4px; max-width:245px; margin:0 auto; }
+  .coded-axis { display:flex; justify-content:center; align-items:center; font-size:.76rem; font-weight:700; color:var(--muted); }
+  .coded-cell { min-width:0; min-height:40px; border:1px solid #bfd6ce; border-radius:6px; background:#eef8f3; color:#1c6151; font-weight:800; font-size:1.2rem; }
+  .coded-cell[aria-pressed="true"] { border:2px solid #7950b3; background:#eee7fa; color:#543283; box-shadow:0 0 0 2px #ede7f6; }
+  .coded-cell:disabled { opacity:.65; }
+  .coded-cell.unknown { background:#fff8e7; color:#755b1a; border-style:dashed; }
+  .coded-cell.empty:not([aria-pressed="true"]) { background:#f4f6fa; color:#53647a; border-color:#cbd3de; border-style:dashed; }
+  .coded-cell.row-evidence { box-shadow:inset 0 -3px #cf762d; }
+  .coded-front { margin:6px 0 7px; text-align:center; font-size:.72rem; font-weight:700; color:#2451a3; }
+  .coded-detail { min-height:42px; margin:0; padding:7px 9px; background:#f4f0fb; border-radius:7px; color:#543283; font-size:.8rem; }
+  .coded-summary { margin:7px 0 0; font-size:.75rem; color:var(--muted); }
+  .coded-source { margin:8px 0 0; font-size:.7rem; color:var(--muted); }
+  .coded-source a { color:inherit; }
+  .coded-mode .views { padding:13px; }
+  .coded-mode .view canvas, body.board-mode.coded-mode .view canvas { width:min(100%,72px); }
+  .coded-mode .view { padding:5px; }
+  .coded-mode .view-grid { gap:6px; }
+  .coded-mode .views .legend { display:none; }
+  .steps[data-method="coded"] { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .coded-scene-info { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:38px; padding:8px 13px 0; pointer-events:none; }
+  .coded-badge { background:#fffdf5ed; color:#63501e; border:1px solid #e5d9b4; border-radius:7px; padding:4px 8px; font-size:.78rem; }
+  .coded-scene-info span:last-child { font-size:.75rem; color:var(--muted); }
+  body.board-mode.coded-mode #model { height:clamp(240px,calc(100dvh - 645px),520px); }
+  @media (max-width:730px) {
+    .method-bar { margin-top:8px; gap:6px; padding:8px; }
+    .method-option { min-height:44px; }
+    .coded-mode .views { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; align-items:start; padding:10px; }
+    .coded-mode #views-title, .coded-mode .views > .hint { grid-column:1 / -1; }
+    .coded-mode .views > .hint { margin-bottom:0; }
+    .coded-mode .view-grid { grid-column:1; }
+    .coded-mode .coded-plan { grid-column:2; margin:0; padding:0; border:0; }
+    .coded-grid { gap:3px; grid-template-columns:15px repeat(3,minmax(0,1fr)); }
+    .coded-cell { min-height:44px; }
+    .steps[data-method="coded"] { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .coded-mode .view canvas, body.board-mode.coded-mode .view canvas { width:min(100%,64px); }
+    .coded-intro, .coded-detail { font-size:.74rem; }
+    .coded-mode .view span { font-size:.7rem; }
+    .coded-front { font-size:.65rem; }
+    body.board-mode.coded-mode #model { height:clamp(280px,70vw,380px); }
+  }
 </style>
 </head>
 <body>
@@ -158,6 +241,26 @@
     <button class="exercise" type="button" data-exercise="k" aria-label="Ejercicio k" aria-pressed="false">k</button>
     <button class="exercise" type="button" data-exercise="l" aria-label="Ejercicio l" aria-pressed="false">l</button>
   </nav>
+  <div class="lesson-toolbar" role="group" aria-label="Opciones de la explicación">
+    <div class="toolbar-actions">
+      <label class="speed-label" for="speed">Velocidad
+        <select id="speed">
+          <option value="0.5">Lenta · 0,5×</option>
+          <option value="1" selected>Normal · 1×</option>
+          <option value="1.5">Rápida · 1,5×</option>
+        </select>
+      </label>
+      <button class="secondary" id="restart" type="button">↺ Reiniciar ejercicio</button>
+    </div>
+    <button class="secondary" id="board-mode" type="button" aria-pressed="false">Modo pizarra</button>
+  </div>
+  <div class="method-bar" id="method-bar" role="group" aria-labelledby="method-label">
+    <strong id="method-label">Resolver a) con:</strong>
+    <div class="method-options">
+      <button type="button" class="method-option" data-method="edges" aria-pressed="true">Desplazar aristas</button>
+      <button type="button" class="method-option" data-method="coded" aria-pressed="false">Planos codificados</button>
+    </div>
+  </div>
   <div class="workspace">
     <section class="panel views" aria-labelledby="views-title">
       <h2 id="views-title">Vistas de la ficha</h2>
@@ -169,18 +272,35 @@
         <button type="button" class="view current" data-view="top" aria-pressed="false"><canvas width="220" height="220" aria-hidden="true"></canvas><span>Planta</span></button>
       </div>
       <p class="legend"><b>Línea continua</b> · Arista visible<br><b>Línea punteada</b> · Cuadrícula de apoyo</p>
+      <section class="coded-plan" id="coded-plan" aria-labelledby="coded-title" hidden>
+        <h3 id="coded-title">Planta → plano codificado</h3>
+        <p class="coded-intro" id="coded-intro">Cada número indica la altura total de una torre de cubos.</p>
+        <div class="coded-grid" id="coded-grid" role="group" aria-label="Plano codificado; fila 3 al fondo y fila 1 delante"></div>
+        <p class="coded-front">↑ Desde aquí miramos el alzado</p>
+        <p class="coded-detail" id="coded-detail" aria-live="polite"></p>
+        <p class="coded-summary" id="coded-summary"></p>
+        <p class="coded-source">Adaptación didáctica de <a href="https://www.teachengineering.org/activities/cub_spatviz_lesson01_activity1" target="_blank" rel="noopener noreferrer">Coded Plans · TeachEngineering</a>.</p>
+      </section>
     </section>
     <section class="panel viewer" aria-labelledby="model-title">
       <div class="viewer-head">
         <h2 id="model-title">Plantilla isométrica</h2>
         <div class="move-key" id="move-key" hidden><span>Aristas que se mueven</span><span>Destino</span></div>
-        <button class="secondary" id="isometric" type="button" hidden>Vista isométrica</button>
+        <div class="viewer-actions">
+          <button class="secondary" id="reset-camera" type="button" hidden>↺ Posición inicial</button>
+          <button class="secondary" id="isometric" type="button" hidden>Vista isométrica</button>
+        </div>
       </div>
       <div class="scene">
+        <div class="coded-scene-info" id="coded-scene-info" hidden><strong class="coded-badge" id="coded-badge"></strong><span>La casilla violeta y su torre se corresponden.</span></div>
         <canvas id="model" tabindex="0" role="img" aria-label="Trazado de la pieza sobre la plantilla isométrica."></canvas>
         <div class="scene-help" hidden>Desliza el dedo o arrastra para girar</div>
       </div>
       <div class="lesson">
+        <div class="step-progress">
+          <span id="step-status"></span>
+          <span class="progress-track" aria-hidden="true"><span class="progress-fill" id="step-fill"></span></span>
+        </div>
         <nav class="steps" aria-label="Pasos de dibujo"></nav>
         <div class="instruction" aria-live="polite">
           <strong id="instruction-title"></strong>
@@ -193,6 +313,7 @@
             <button type="button" class="control primary" id="next">Siguiente →</button>
           </div>
         </div>
+        <p class="playback-note" id="pause-note" role="status" hidden>En pausa. Pulsa «Continuar» para seguir desde este punto.</p>
       </div>
     </section>
   </div>
@@ -309,6 +430,103 @@ const iso = [-Math.PI / 4, Math.atan(1 / Math.sqrt(2))];
 const rightIso = [-iso[0],iso[1]];
 const angles = {front:[0,0], left:[-Math.PI/2,0], right:[Math.PI/2,0], top:[0,Math.PI/2]};
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const codedFootprint = ["Huella", "Dibuja la huella: 3 × 3 casillas",
+  "La planta ocupa las nueve casillas. Cada una será la base de una torre. La fila 1 está delante, junto a la flecha del alzado. Pulsa una casilla para localizarla en la plantilla."];
+const codedFinish = ["Pieza final", "Borra las divisiones entre cubos",
+  "Los cubos son una ayuda para construir. Para terminar el dibujo, elimina las uniones que quedan en una misma cara plana y conserva el contorno y los cambios de plano. Comprueba el resultado con «Ver en 3D»."];
+const codedLessonA = [
+  codedFootprint,
+  ["Alzado", "El alzado aún no resuelve la columna C",
+    "El alzado muestra la altura máxima de cada columna: A = 1, B = 1 y C = 3. Como la planta está llena, todas las casillas de A y B tienen un cubo. En C sabemos que alguna torre llega a 3, pero todavía no cuáles: dejamos los interrogantes."],
+  ["Perfil izquierdo", "Usa el perfil para resolver C1, C2 y C3",
+    "El perfil izquierdo llega a 3 en cada franja de profundidad: delante, en medio y al fondo. En cada fila, A y B solo miden 1; por tanto, C debe llegar a 3. Así obtenemos C1 = C2 = C3 = 3. Pulsa las casillas de C para seguir cada correspondencia. Con un contorno diagonal habría que estudiar la rampa; no podríamos repetir estos treses."],
+  ["Primera capa", "Coloca un cubo en cada casilla",
+    "Todos los números son al menos 1: coloca nueve cubos, uno por casilla. Los números del plano siguen indicando la altura final; las casillas con un 3 todavía necesitan dos cubos más."],
+  ["Segunda capa", "Añade el segundo cubo donde pone 3",
+    "Las seis torres que llevan un 1 ya están completas. Añade un cubo sobre cada torre de la columna C, que es la columna derecha del plano. Ya tienes doce cubos."],
+  ["Tercera capa", "Completa las tres torres de altura 3",
+    "Añade un último cubo en C1, C2 y C3. Cada una de esas torres tiene ahora tres cubos. La pieza completa suma quince cubos: seis torres de uno y tres torres de tres."],
+  codedFinish
+];
+const codedLessonB = [
+  codedFootprint,
+  ["Alzado", "Lee los máximos y localiza el escalón",
+    "El alzado alcanza 3 en A, B y C. Antes de escribir esos números en el plano, falta averiguar a qué profundidad está el muro. Fíjate también en las aristas interiores: el frente bajo de A y B llega a 1 y el escalón de C llega a 2."],
+  ["Perfil izquierdo", "Sitúa el muro al fondo y el escalón a la derecha",
+    "El perfil llega a 3 al fondo (fila 3) y a 2 delante (filas 1 y 2). En la planta, la fila 3 forma una sola superficie, así que A3, B3 y C3 valen 3. En las filas 1 y 2, la planta separa dos zonas: la baja de A y B (altura 1) y el escalón de C (altura 2), que distinguimos en el alzado."],
+  ["Primera capa", "Pon un cubo en cada casilla",
+    "La planta está llena. Coloca un cubo en cada casilla para formar la base de nueve cubos."],
+  ["Segunda capa", "Sube el escalón y empieza el muro",
+    "Pon un cubo más en las casillas de altura 2 o 3: C1, C2 y toda la fila 3. Añades cinco cubos y ya tienes catorce."],
+  ["Tercera capa", "Completa el muro del fondo",
+    "Añade un cubo más solo en A3, B3 y C3. El escalón de C1 y C2 se queda a altura 2. La pieza completa tiene diecisiete cubos."],
+  codedFinish
+];
+const codedLessonC = [
+  codedFootprint,
+  ["Alzado", "Lee el frente y el rebaje",
+    "Los máximos de A, B y C son 2, 2 y 3. En A se ve un frente de altura 1 y una cara de altura 2 detrás. Usa la planta para ver hasta dónde llega el rebaje y el perfil para localizar la altura 3."],
+  ["Perfil izquierdo", "Localiza el rebaje y las torres altas",
+    "El perfil alcanza 3 en las filas 2 y 3. Solo C puede llegar a 3, así que C2 y C3 valen 3. En la planta, el rebaje ocupa A1 y A2, con altura 1 según el alzado. A3 alcanza 2. La planta une A3, toda la columna B y C1 en una misma superficie de altura 2."],
+  ["Primera capa", "Cubre las nueve casillas",
+    "Coloca un cubo en cada casilla ocupada. La primera capa tiene nueve cubos."],
+  ["Segunda capa", "Deja el rebaje a altura 1",
+    "Añade un cubo a las siete torres que marcan 2 o 3. Deja A1 y A2 con un solo cubo. Ahora tienes dieciséis cubos."],
+  ["Tercera capa", "Completa C2 y C3",
+    "Solo C2 y C3 alcanzan 3. Añade un cubo a cada una para completar los dieciocho cubos de la pieza."],
+  codedFinish
+];
+const codedLessonD = [
+  ["Huella", "Dibuja la huella en L",
+    "La planta ocupa la columna C y la fila 3 del fondo. Marca con 0 las cuatro casillas vacías de A y B en las filas 1 y 2."],
+  ["Alzado", "Empieza por A3 y B3",
+    "El alzado muestra máximos de 1, 2 y 3. En la planta, A y B tienen una sola casilla ocupada cada una. Por eso A3 vale 1 y B3 vale 2. Para repartir las alturas de C, mira el perfil izquierdo."],
+  ["Perfil izquierdo", "Reparte 1, 2 y 3 en la columna C",
+    "El perfil alcanza 1 delante, 2 en medio y 3 al fondo. En las filas 1 y 2 solo hay una casilla ocupada, así que C1 vale 1 y C2 vale 2. En la fila del fondo, A3 y B3 ya están a 1 y 2. Solo C3 puede alcanzar 3."],
+  ["Primera capa", "Coloca los cinco cubos de la L",
+    "Pon un cubo en cada casilla ocupada. Las cuatro casillas marcadas con 0 quedan vacías."],
+  ["Segunda capa", "Sube un cubo en C2, B3 y C3",
+    "Añade un segundo cubo donde el plano marca 2 o 3. Esas tres torres llevan el total a ocho cubos."],
+  ["Tercera capa", "Completa la torre de la esquina",
+    "Pon el último cubo en C3, donde se cruzan los dos brazos de la L. La pieza suma nueve cubos."],
+  codedFinish
+];
+const codedLessonE = [
+  ["Huella", "Localiza el entrante delantero",
+    "La planta ocupa ocho casillas. A1, en la esquina delantera izquierda, queda fuera de la pieza y lleva un 0."],
+  ["Alzado", "Fija las alturas en A y B",
+    "El alzado limita A y B a un cubo. Pon 1 en sus casillas ocupadas y conserva el 0 en A1. La columna C alcanza 3, pero para saber dónde cambia de altura hay que leer el perfil."],
+  ["Perfil izquierdo", "Identifica los tres peldaños de C",
+    "El perfil alcanza 1, 2 y 3 desde delante hacia el fondo. C1 está ocupada y su fila solo alcanza 1. En las filas 2 y 3, A y B se quedan a 1, así que C2 y C3 deben llegar a 2 y 3."],
+  ["Primera capa", "Construye la base con el entrante",
+    "Pon un cubo en cada casilla ocupada. Coloca ocho cubos y deja A1 vacía."],
+  ["Segunda capa", "Sube C2 y C3",
+    "Añade un cubo en las dos posiciones que marcan 2 o más. El total llega a diez cubos."],
+  ["Tercera capa", "Completa el peldaño del fondo",
+    "Añade un cubo solo en C3. Deja C2 a altura 2 y C1 a altura 1. La pieza tiene once cubos."],
+  codedFinish
+];
+const codedLessonF = [
+  ["Huella", "Marca el brazo derecho y su prolongación al fondo",
+    "La planta ocupa C1, C2, C3 y B3. Las cinco casillas restantes llevan un 0."],
+  ["Alzado", "Lee la altura de B3",
+    "A queda vacía. En B solo está ocupada B3, así que el máximo de 3 pertenece a esa torre. En C también se alcanza 3 y se ve un frente de altura 2. Comprueba con el perfil dónde empieza el bloque alto."],
+  ["Perfil izquierdo", "Distingue el brazo bajo del bloque alto",
+    "El perfil alcanza 2 en las filas 1 y 2. Como solo C está ocupada en esas filas, C1 y C2 valen 2. Al fondo, el perfil llega a 3 y la planta muestra un techo continuo entre B3 y C3. Como B3 vale 3, C3 también vale 3."],
+  ["Primera capa", "Ocupa las cuatro casillas de la huella",
+    "Coloca un cubo en cada casilla ocupada. Las cinco casillas con 0 quedan vacías."],
+  ["Segunda capa", "Sube las cuatro torres a altura 2",
+    "Todas las casillas ocupadas marcan 2 o 3. Añade cuatro cubos para llegar a ocho."],
+  ["Tercera capa", "Completa el bloque del fondo",
+    "Añade un cubo en B3 y otro en C3. C1 y C2 se quedan a altura 2. La pieza suma diez cubos."],
+  codedFinish
+];
+const codedLessons = {a:codedLessonA, b:codedLessonB, c:codedLessonC, d:codedLessonD, e:codedLessonE, f:codedLessonF};
+let method = "edges";
+let codedCell = [2,0];
+const supportsCoded = () => Object.hasOwn(codedLessons,exercise);
+const isCoded = () => supportsCoded() && method === "coded";
+const activeLesson = () => isCoded() ? codedLessons[exercise] : lessons[exercise];
 const canvas = document.querySelector("#model");
 const ctx = canvas.getContext("2d");
 const exerciseButtons = [...document.querySelectorAll(".exercise")];
@@ -326,22 +544,36 @@ const moveLabel = moveKey.firstElementChild;
 const moveAction = document.querySelector("#move-action");
 const copyStep = 1;
 const firstMoveStep = copyStep + 1;
-const currentMove = () => moves[exercise][step-firstMoveStep];
+const currentMove = () => isCoded() ? undefined : moves[exercise][step-firstMoveStep];
 const movePreview = 1850;
 const moveDuration = 1650;
-const lastStep = () => lessons[exercise].length - 1;
+const lastStep = () => activeLesson().length - 1;
 let modelMode = false;
 let drawingStart = null;
 let moveReady = false;
 let exercise = "a";
 let step = 0;
-let timer = null;
 let paused = false;
+let autoplay = false;
+let nextAutoAt = null;
+let playbackRate = 1;
+let clockAnchor = performance.now();
+let lessonAnchor = 0;
 let camera = [...iso];
 let cameraMove;
 let selectedView = null;
 let frame;
 let drag;
+
+// One clock for both motion and automatic step changes: pausing freezes both.
+function lessonNow(wallTime = performance.now()) {
+  return lessonAnchor + (paused ? 0 : (wallTime-clockAnchor)*playbackRate);
+}
+function syncLessonClock() {
+  const now = performance.now();
+  lessonAnchor = lessonNow(now);
+  clockAnchor = now;
+}
 
 const viewGrid = {offset:14, size:64};
 
@@ -436,19 +668,31 @@ function drawView(button, move) {
 }
 
 function updateUI() {
+  const coded = isCoded();
+  const lesson = activeLesson();
+  document.body.classList.toggle("coded-mode",coded);
+  document.querySelector("#method-bar").hidden = !supportsCoded();
+  document.querySelector("#method-label").textContent = `Resolver ${exercise}) con:`;
+  document.querySelectorAll(".method-option").forEach(button => button.setAttribute("aria-pressed",button.dataset.method === method));
+  document.querySelector("#coded-plan").hidden = !coded;
+  document.querySelector("#coded-scene-info").hidden = !coded || modelMode;
   const rightProfile = useRightProfile();
   const inclined = Boolean(inclinedModels[exercise]);
   exerciseButtons.forEach(button => button.setAttribute("aria-pressed", button.dataset.exercise === exercise));
-  steps.style.setProperty("--steps", lessons[exercise].length);
-  const stepLabels = lessons[exercise].map(([label]) => label);
+  steps.style.setProperty("--steps", lesson.length);
+  const stepLabels = lesson.map(([label]) => label);
   const move = modelMode ? undefined : currentMove();
-  if (steps.dataset.exercise !== exercise) {
+  const methodKey = coded ? "coded" : "edges";
+  if (steps.dataset.exercise !== exercise || steps.dataset.method !== methodKey) {
     steps.dataset.exercise = exercise;
+    steps.dataset.method = methodKey;
     steps.replaceChildren(...stepLabels.map((label, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "step";
       button.textContent = label;
+      button.dataset.number = index+1;
+      button.setAttribute("aria-label", `Paso ${index+1}: ${label}`);
       button.addEventListener("click", () => { stop(); setStep(index); });
       return button;
     }));
@@ -468,13 +712,16 @@ function updateUI() {
     else if (reference) button.setAttribute("aria-label", "Planta, línea de referencia para este desplazamiento");
     else button.removeAttribute("aria-label");
     drawView(button, move);
+    if (coded && !modelMode) drawCodedViewHighlight(button);
   });
-  const [, heading, instruction] = lessons[exercise][step];
+  const [, heading, instruction] = lesson[step];
+  document.querySelector("#step-status").textContent = `Ejercicio ${exercise.toUpperCase()}${coded ? " · Planos codificados" : ""} · Paso ${step+1} de ${lesson.length}`;
+  document.querySelector("#step-fill").style.width = `${100*(step+1)/lesson.length}%`;
   document.querySelector("#instruction-title").textContent = heading;
   document.querySelector("#instruction-text").textContent = instruction;
   previous.disabled = step === 0;
   next.disabled = step === lastStep();
-  next.textContent = step === 0 ? "Copiar vistas →"
+  next.textContent = coded ? (step === 0 ? "Leer el alzado →" : step === 1 ? "Cruzar con el perfil →" : step === 2 ? "Construir →" : "Siguiente →") : step === 0 ? "Copiar vistas →"
     : exercise === "g" && step === 2 ? "Unir extremos →" : "Siguiente →";
   replay.disabled = modelMode || step === 0;
   modelToggle.hidden = step !== lastStep();
@@ -483,10 +730,13 @@ function updateUI() {
   if (move) moveKey.style.setProperty("--move-color", colors[move[3]]);
   updateMoveAction();
   modelToggle.textContent = modelMode ? "Volver al dibujo" : "Ver en 3D";
+  document.querySelector("#reset-camera").hidden = !modelMode;
   help.hidden = !modelMode;
   title.textContent = modelMode ? "Pieza en 3D" : "Plantilla isométrica";
   document.querySelector(".hint").textContent = inclined
-    ? move
+    ? modelMode
+      ? "Pulsa alzado, perfil o planta para mirar la pieza de frente a esa vista. Las rampas mantienen su rayado."
+      : move
       ? "La planta marca en verde dónde colocar las aristas. La línea discontinua indica su destino en la plantilla."
       : "Rampas rayadas. Azul y verde para alzado y planta. Naranja y verde para perfil y planta."
     : rightProfile
@@ -503,6 +753,13 @@ function updateUI() {
   canvas.setAttribute("aria-label", modelMode
     ? `Pieza ${exercise}. Arrastra o usa las flechas para girarla.`
     : `Ejercicio ${exercise}, paso ${step+1}. ${heading}`);
+  if (coded) {
+    title.textContent = modelMode ? "Pieza en 3D" : step === 6 ? "De los cubos a la pieza" : step === 1 ? "Alzado → alturas de las columnas" : step === 2 ? "Perfil izquierdo → alturas por filas" : "Construcción con cubos";
+    document.querySelector(".hint").textContent = modelMode
+      ? "Pulsa una vista para comprobar la pieza."
+      : "La planta sitúa cada torre. El alzado y el perfil ayudan a deducir su altura.";
+    updateCodedUI();
+  }
 }
 
 function updateMoveAction() {
@@ -510,17 +767,17 @@ function updateMoveAction() {
   const moving = move && !moveReady && drawingStart !== null;
   moveAction.hidden = !move;
   moveAction.setAttribute("aria-disabled", Boolean(moving));
-  moveAction.textContent = moveReady ? "Mover aristas" : moving ? "Moviendo aristas…" : "Ver origen y destino";
+  moveAction.textContent = moveReady ? "Mover aristas" : moving ? (paused ? "Movimiento en pausa" : "Moviendo aristas…") : "Ver origen y destino";
   moveKey.lastElementChild.hidden = !moveReady && !moving;
 }
 
 function setStep(value, animateMove = false) {
-  step = value;
+  step = Math.max(0,Math.min(lastStep(),value));
   modelMode = false;
   cameraMove = undefined;
   selectView(null);
   moveReady = Boolean(currentMove()) && !animateMove;
-  drawingStart = step === 0 || moveReady ? null : performance.now();
+  drawingStart = step === 0 || moveReady ? null : lessonNow();
   updateUI();
   schedule();
 }
@@ -538,15 +795,18 @@ function setCamera(target, view = null) {
 }
 
 function stop() {
-  clearTimeout(timer);
-  timer = null;
+  syncLessonClock();
   paused = false;
-  play.textContent = "▶︎ Animar todo";
+  autoplay = false;
+  nextAutoAt = null;
+  updatePlayback();
 }
 
-function autoStep() {
-  setStep(step+1,true);
-  timer = setTimeout(step === lastStep() ? stop : autoStep, 5400);
+function updatePlayback() {
+  play.textContent = paused ? "▶︎ Continuar" : autoplay ? "❚❚ Pausar" : "▶︎ Animar todo";
+  play.classList.toggle("paused",paused);
+  document.querySelector("#pause-note").hidden = !paused;
+  updateMoveAction();
 }
 
 exerciseButtons.forEach(button => button.addEventListener("click", () => {
@@ -573,7 +833,7 @@ moveAction.addEventListener("click", () => {
   stop();
   if (moveReady) {
     moveReady = false;
-    drawingStart = performance.now()-movePreview;
+    drawingStart = lessonNow()-movePreview;
     updateMoveAction();
     schedule();
   } else {
@@ -581,20 +841,51 @@ moveAction.addEventListener("click", () => {
   }
 });
 play.addEventListener("click", () => {
-  if (timer !== null) {
-    clearTimeout(timer);
-    timer = null;
-    paused = true;
-    play.textContent = "▶︎ Continuar";
-    return;
+  syncLessonClock();
+  if (autoplay) {
+    paused = !paused;
+  } else {
+    paused = false;
+    autoplay = true;
+    setStep(0);
+    nextAutoAt = lessonNow()+5400;
   }
-  if (!paused || step === lastStep()) setStep(0);
-  paused = false;
-  play.textContent = "❚❚ Pausar";
-  timer = setTimeout(autoStep, 5400);
+  updatePlayback();
+  schedule(true);
 });
 
-function schedule() {
+document.querySelector("#speed").addEventListener("change", event => {
+  syncLessonClock();
+  playbackRate = Number(event.target.value);
+  schedule(true);
+});
+document.querySelector("#restart").addEventListener("click", () => { stop(); setStep(0); });
+document.querySelectorAll(".method-option").forEach(button => button.addEventListener("click", () => {
+  if (!supportsCoded() || method === button.dataset.method) return;
+  stop();
+  method = button.dataset.method;
+  setStep(0);
+}));
+document.querySelector("#reset-camera").addEventListener("click", () => {
+  setCamera(useRightProfile() ? rightIso : iso);
+});
+document.querySelector("#board-mode").addEventListener("click", event => {
+  const enabled = document.body.classList.toggle("board-mode");
+  event.currentTarget.setAttribute("aria-pressed",enabled);
+  event.currentTarget.textContent = enabled ? "Salir de modo pizarra" : "Modo pizarra";
+  schedule(true);
+});
+// A hidden tab must not silently advance the lesson while the teacher is away.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && autoplay && !paused) {
+    syncLessonClock();
+    paused = true;
+    updatePlayback();
+  }
+});
+
+function schedule(force = false) {
+  if (paused && !cameraMove && !force) return;
   if (frame === undefined) frame = requestAnimationFrame(render);
 }
 const ease = value => 1 - Math.pow(1-value, 3);
@@ -1521,6 +1812,17 @@ function drawLesson(project, width, height, now) {
 
 function render(now) {
   frame = undefined;
+  if (autoplay && !paused) {
+    if (nextAutoAt !== null && lessonNow(now) >= nextAutoAt) {
+      if (step === lastStep()) stop();
+      else {
+        setStep(step+1,true);
+        nextAutoAt = lessonNow()+5400;
+      }
+    }
+    if (autoplay) schedule();
+  }
+  const drawingNow = lessonNow(now);
   if (cameraMove) {
     const t = progress(now,cameraMove.start,460);
     camera = interpolate(cameraMove.from,cameraMove.to,ease(t));
@@ -1546,11 +1848,12 @@ function render(now) {
     const centered = [point[0]-1.5,point[1]-1.5,point[2]-1.46];
     return [width/2+unit*dot(centered,right), height/2-unit*dot(centered,up)];
   };
-  drawFrontArrow(project,eye);
+  if (!(isCoded() && !modelMode && (step === 1 || step === 2))) drawFrontArrow(project,eye);
   if (!modelMode) {
-    if (inclinedModels[exercise]) drawInclinedLesson(project,width,height,now);
-    else if (rightProfile) drawRampLesson(project,width,height,now);
-    else drawLesson(project,width,height,now);
+    if (isCoded()) drawCodedLesson(project,eye,drawingNow);
+    else if (inclinedModels[exercise]) drawInclinedLesson(project,width,height,drawingNow);
+    else if (rightProfile) drawRampLesson(project,width,height,drawingNow);
+    else drawLesson(project,width,height,drawingNow);
     return;
   }
   ctx.lineJoin = "round";
@@ -1560,6 +1863,380 @@ function render(now) {
   else if (rightProfile) drawRampModel(project,rampFaces.filter(({normal}) => dot(normal,eye) > .00001));
   else drawBlockModel(project,projectedFaces(exercise,eye),selectedView && !cameraMove);
   if (cameraMove) schedule();
+}
+
+// A number is the total height of its tower, regardless of the current layer.
+function codedHeights(key, stage, amount = 1) {
+  return exercises[key].map(row => row.map(target => {
+    if (stage < 3) return 0;
+    if (stage >= 6) return target;
+    const previousLayer = stage-3;
+    const before = Math.min(target,previousLayer);
+    const after = Math.min(target,previousLayer+1);
+    return before+(after-before)*amount;
+  }));
+}
+
+function codedName(x,y) { return `${"ABC"[x]}${y+1}`; }
+
+function setupCodedPlan() {
+  const grid = document.querySelector("#coded-grid");
+  const label = text => {
+    const item = document.createElement("span");
+    item.className = "coded-axis";
+    item.textContent = text;
+    grid.append(item);
+  };
+  ["","A","B","C"].forEach(label);
+  for (let y=2; y>=0; y--) {
+    label(String(y+1));
+    for (let x=0; x<3; x++) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "coded-cell";
+      button.dataset.x = x;
+      button.dataset.y = y;
+      button.addEventListener("click", () => {
+        codedCell = [x,y];
+        updateUI();
+        schedule(true);
+      });
+      grid.append(button);
+    }
+  }
+}
+
+function codedColumnMax(key,x) {
+  return Math.max(...exercises[key].map(row => row[x]));
+}
+
+function codedRowMax(key,y) {
+  return Math.max(...exercises[key][y]);
+}
+
+function codedPlanValue(x,y,stage) {
+  const height = exercises[exercise][y][x];
+  if (height === 0) return "0";
+  if (stage === 0) return "·";
+  if (stage === 1) {
+    // A maximum of 1 fixes every occupied cell. A single tower must reach the maximum.
+    const occupied = exercises[exercise].filter(row => row[x]>0).length;
+    if (codedColumnMax(exercise,x)>1 && occupied>1) return "?";
+  }
+  return String(height);
+}
+
+function codedReadingDetail(x,y) {
+  const cell = codedName(x,y);
+  if (exercise !== "a" && exercise !== "b") {
+    const height = exercises[exercise][y][x];
+    if (step === 1) {
+      const maximum = codedColumnMax(exercise,x);
+      if (maximum === 1) return `${cell} = 1. La planta muestra una casilla ocupada y el alzado limita la columna a un cubo.`;
+      if (codedPlanValue(x,y,step) !== "?") return `${cell} = ${height}. Es la única casilla ocupada de su columna, así que alcanza el máximo del alzado.`;
+      return `${cell} sigue por resolver. El alzado da un máximo de ${maximum} para la columna ${"ABC"[x]}. Busca la fila correspondiente en el perfil.`;
+    }
+    const row = y+1;
+    let reason;
+    switch (exercise) {
+      case "c":
+        if (height === 3) reason = `El perfil exige 3 en la fila ${row}. Solo C puede alcanzar esa altura según el alzado.`;
+        else if (height === 1) reason = "La planta sitúa aquí el rebaje de altura 1 que se ve en A en el alzado.";
+        else reason = "Está en la superficie continua que incluye A3. El alzado da altura 2 al tramo alto de A.";
+        break;
+      case "d":
+        if (y < 2) reason = `Es la única torre de la fila ${row}, cuyo máximo se lee en el perfil.`;
+        else if (x < 2) reason = "Es la única torre de su columna. Su altura se lee en el alzado.";
+        else reason = "En la fila 3, A3 vale 1 y B3 vale 2. C3 aporta la altura 3 del perfil.";
+        break;
+      case "e":
+        if (x < 2) reason = "La planta muestra una casilla ocupada y el alzado fija su columna a 1.";
+        else if (y === 0) reason = "La casilla está ocupada y el perfil limita la fila delantera a 1.";
+        else reason = `El perfil exige altura ${height} en la fila ${row}. A y B se quedan a 1 según el alzado.`;
+        break;
+      case "f":
+        if (y < 2) reason = `Solo C ocupa la fila ${row}. La altura 2 se lee en el perfil.`;
+        else if (x === 1) reason = "Es la única casilla ocupada de B. El alzado le da altura 3.";
+        else reason = "La planta muestra un techo continuo con B3, que tiene altura 3.";
+        break;
+    }
+    return `${cell} = ${height}. ${reason}`;
+  }
+  if (exercise === "b") {
+    if (step === 1) {
+      const frontHeight = x === 2 ? 2 : 1;
+      return `${cell}: el máximo de su columna es 3. El frente llega a ${frontHeight}. Lee el perfil para situar el muro de 3.`;
+    }
+    if (y === 2) return "Fila 3: el perfil llega a 3. La planta muestra una superficie continua que ocupa A3, B3 y C3.";
+    return `Fila ${y+1}: el perfil llega a 2. La planta separa la zona baja del escalón. En el alzado, el escalón de altura 2 está en C.`;
+  }
+  if (step === 1) {
+    if (x === 2) return `${cell}: aún no sabemos su altura. El 3 del alzado es el máximo de toda la columna C, no la altura de cada casilla.`;
+    return `${cell} = 1: la planta indica que hay material y el alzado limita toda la columna ${"ABC"[x]} a un cubo.`;
+  }
+  return `Fila ${y+1}: el perfil exige altura 3. A${y+1} y B${y+1} solo llegan a 1; por eso C${y+1} debe llegar a 3. En el perfil izquierdo, las filas se leen 3–2–1 de izquierda a derecha.`;
+}
+
+function updateCodedUI() {
+  const [x,y] = codedCell;
+  const isA = exercise === "a";
+  const heights = exercises[exercise].flat();
+  const towers = heights.filter(height => height>0).length;
+  const height = exercises[exercise][y][x];
+  const cell = codedName(x,y);
+  document.querySelectorAll(".coded-cell").forEach(button => {
+    const bx = Number(button.dataset.x), by = Number(button.dataset.y);
+    const value = codedPlanValue(bx,by,step);
+    button.textContent = value;
+    const unresolved = value === "·" || value === "?";
+    button.classList.toggle("unknown",value === "?");
+    button.classList.toggle("empty",value === "0");
+    button.classList.toggle("row-evidence",step === 2 && by === y);
+    const label = value === "0" ? "vacía" : unresolved ? "altura por deducir" : `${value} ${value==="1" ? "cubo" : "cubos"} de altura`;
+    button.setAttribute("aria-label",`Casilla ${codedName(bx,by)}, ${label}`);
+    button.setAttribute("aria-pressed",bx===x && by===y);
+    button.disabled = modelMode;
+  });
+  document.querySelector("#coded-intro").textContent = step === 0
+    ? (towers === 9 ? "Las nueve casillas están ocupadas." : "0 indica una casilla vacía. Los puntos marcan casillas ocupadas.")
+    : step === 1 ? (isA ? "El alzado fija A y B. Las alturas de C aún están por deducir." : "Escribe las alturas que ya puedes asignar. «?» indica una altura pendiente.")
+    : step === 2 ? (isA ? "Pulsa C1, C2 o C3 para seguir su fila en el perfil." : "Pulsa una casilla para comparar su fila con el perfil.")
+    : "Cada número indica la altura total de una torre. Pulsa una casilla para seguirla.";
+  const count = codedHeights(exercise,step).flat().reduce((sum,n) => sum+n,0);
+  const total = heights.reduce((sum,n) => sum+n,0);
+  document.querySelector("#coded-detail").textContent = modelMode
+    ? "Gira la pieza o pulsa sus vistas. Vuelve al dibujo para seleccionar una casilla."
+    : height === 0 ? `${cell} = 0. La planta deja esta casilla vacía. Aquí no se coloca ningún cubo.`
+    : step === 0 ? `${cell}: esta casilla será la base de una torre.`
+    : step <= 2 ? codedReadingDetail(x,y)
+    : step === 6 ? "Las líneas entre cubos de una misma cara desaparecen; la forma se mantiene."
+    : `${cell} pide ${height} ${height===1 ? "cubo" : "cubos"}. Al terminar esta capa tendrá ${Math.min(height,step-2)} de ${height}.`;
+  document.querySelector("#coded-summary").textContent = step < 3
+    ? "Columnas A–C: izquierda → derecha. Filas 1–3: delante → fondo."
+    : step === 6 ? `Total: ${total} cubos · ${towers} torres.` : `Al completar esta capa: ${count} de ${total} cubos.`;
+  const columnMaxima = [0,1,2].map(col => codedColumnMax(exercise,col)).join(" · ");
+  const rowMaxima = [2,1,0].map(row => codedRowMax(exercise,row)).join(" · ");
+  document.querySelector("#coded-badge").textContent = [
+    `${towers} casillas ocupadas`,
+    `Alzado: máximos ${columnMaxima}`,
+    `Perfil, filas 3–2–1: ${rowMaxima}`,
+    `Capa 1 · ${count} cubos`,
+    `Capa 2 · ${count} cubos`,
+    `Capa 3 · ${count} cubos`,
+    "Conserva las aristas de la pieza"
+  ][step];
+  document.querySelector("#coded-scene-info span").textContent = step === 1
+    ? (isA ? "C queda pendiente hasta comprobar el perfil." : "Cada máximo corresponde a una columna.")
+    : step === 2 ? `Franja ${y+1} del perfil ↔ fila ${y+1} de la planta.`
+    : step === 6 ? "Desaparecen las divisiones de ayuda."
+    : height === 0 ? `${cell} queda vacía en todas las capas.` : "La casilla violeta y su torre se corresponden.";
+}
+
+function drawCodedViewHighlight(button) {
+  const direction = button.dataset.view;
+  const readingFront = direction === "front" && step >= 1;
+  const readingProfile = direction === "left" && step >= 2;
+  button.classList.toggle("current",direction === "top" || readingFront || readingProfile);
+  if (direction !== "top" && !readingFront && !readingProfile) return;
+  const pen = button.querySelector("canvas").getContext("2d");
+  const [x,y] = codedCell;
+  const {offset:o,size:s} = viewGrid;
+  pen.save();
+  pen.strokeStyle = "#7950b3";
+  pen.lineWidth = 6;
+  if (direction === "top") {
+    if (step === 2) {
+      pen.fillStyle = "#d4803225";
+      pen.fillRect(o,o+(2-y)*s,3*s,s);
+      pen.strokeStyle = colors.left;
+      pen.strokeRect(o+3,o+(2-y)*s+3,3*s-6,s-6);
+      pen.strokeStyle = "#7950b3";
+    }
+    pen.strokeRect(o+x*s+3,o+(2-y)*s+3,s-6,s-6);
+  } else {
+    // Left-profile horizontal coordinate runs from back (3) to front (1).
+    const column = direction === "front" ? x : 2-y;
+    const h = direction === "front" ? codedColumnMax(exercise,x) : codedRowMax(exercise,y);
+    if (h>0) pen.strokeRect(o+column*s+3,o+(3-h)*s+3,s-6,h*s-6);
+    pen.font = "bold 13px system-ui";
+    pen.textAlign = "center";
+    pen.fillStyle = colors[direction];
+    for (let col=0;col<3;col++) pen.fillText(direction === "front" ? "ABC"[col] : String(3-col),o+(col+.5)*s,218);
+  }
+  pen.restore();
+}
+
+// A large, flat comparison makes the inference visible before stacking cubes.
+function drawCodedReading(width,height) {
+  const profile = step === 2;
+  const [selectedX,selectedY] = codedCell;
+  const size = Math.min(220,width*.32,height-112);
+  const left = width*.065, right = width-left-size, top = 48;
+  const {offset:o,size:s} = viewGrid;
+  const unit = s*size/220, inset = o*size/220;
+  const text = (x,y,label,color="#233956",fontSize=14) => {
+    ctx.fillStyle = color; ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(label,x,y);
+  };
+  ctx.save();
+  text(left+size/2,19,profile ? "Perfil izquierdo" : "Alzado",profile ? colors.left : colors.front);
+  text(right+size/2,19,profile ? "Plano completado" : "Plano por completar",colors.top);
+  const source = viewButtons.find(b=>b.dataset.view===(profile ? "left" : "front")).querySelector("canvas");
+  ctx.drawImage(source,left,top,size,size);
+  // The view gives a maximum for each column (front) or row (left profile).
+  for (let col=0;col<3;col++) {
+    const maximum = profile ? codedRowMax(exercise,2-col) : codedColumnMax(exercise,col);
+    text(left+inset+(col+.5)*unit,top-9,String(maximum),profile ? colors.left : colors.front,13);
+    text(right+inset+(col+.5)*unit,top-9,"ABC"[col],colors.top,13);
+  }
+  for (let y=0;y<3;y++) for (let x=0;x<3;x++) {
+    const px = right+inset+x*unit, py = top+inset+(2-y)*unit;
+    const active = x===selectedX && y===selectedY;
+    const value = codedPlanValue(x,y,step);
+    ctx.fillStyle = value === "0" ? "#f4f6fa" : profile && y===selectedY ? "#fff0dc" : value === "?" ? "#fff8e7" : "#e4f2eb";
+    ctx.fillRect(px,py,unit,unit);
+    ctx.strokeStyle = active ? "#7950b3" : profile && y===selectedY ? colors.left : "#97b4a9";
+    ctx.lineWidth = active ? 3 : 1.2; ctx.strokeRect(px,py,unit,unit);
+    text(px+unit/2,py+unit/2,value,active ? "#7950b3" : value === "0" ? "#53647a" : "#295f51",Math.max(15,unit*.43));
+    if (x===0) text(px-10,py+unit/2,String(y+1),profile && y===selectedY ? colors.left : "#52647b",12);
+  }
+  if (profile && exercise !== "a") {
+    // Trace the same changes of height that are visible in the plant view.
+    const heights = exercises[exercise];
+    ctx.strokeStyle = colors.top;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let y=0;y<3;y++) for (let x=0;x<3;x++) {
+      const px = right+inset+x*unit, py = top+inset+(2-y)*unit;
+      if (x>0 && heights[y][x] !== heights[y][x-1]) {
+        ctx.moveTo(px,py); ctx.lineTo(px,py+unit);
+      }
+      if (y<2 && heights[y][x] !== heights[y+1][x]) {
+        ctx.moveTo(px,py); ctx.lineTo(px+unit,py);
+      }
+    }
+    ctx.stroke();
+  }
+  const arrowY = top+size*.5, from=left+size+8, to=right-16;
+  const endY = profile ? top+inset+(2-selectedY+.5)*unit : arrowY;
+  ctx.strokeStyle = profile ? colors.left : colors.front; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(from,arrowY); ctx.lineTo(to-12,endY); ctx.lineTo(to,endY);
+  ctx.moveTo(to-7,endY-5); ctx.lineTo(to,endY); ctx.lineTo(to-7,endY+5); ctx.stroke();
+  if (to-from>50) text((from+to)/2,(arrowY+endY)/2-15,profile ? `Fila ${selectedY+1}` : "Cruza",profile ? colors.left : colors.front,12);
+  const font = Math.max(11,Math.min(15,width/38));
+  let result;
+  if (profile) {
+    result = exercise === "a"
+      ? `A${selectedY+1} = 1 y B${selectedY+1} = 1 → C${selectedY+1} = 3`
+      : exercises[exercise][selectedY].map((h,x) => `${codedName(x,selectedY)} = ${h}`).join("  ·  ");
+  } else {
+    result = exercise === "a"
+      ? "En C, el máximo es 3. Cada altura sigue pendiente."
+      : "El perfil ayuda a situar las alturas por filas.";
+  }
+  text(width/2,top+size+24,result,profile ? colors.left : colors.front,font);
+  ctx.restore();
+}
+
+// Exposed faces only; partial layers grow upwards, never overlap opaque faces.
+function codedVisibleFaces(heights, eye) {
+  const result = [];
+  for (let y=0; y<3; y++) for (let x=0; x<3; x++) {
+    const h = heights[y][x];
+    if (h < .00001) continue;
+    for (const face of faces) {
+      if (dot(face.n,eye) <= .00001) continue;
+      if (face.n[2] === 1) {
+        const points = face.p.map(([px,py]) => [x+px,y+py,h]);
+        result.push({points,x,y,view:face.view,top:h,depth:dot(interpolate(points[0],points[2],.5),eye)});
+      } else if (face.n[2] === 0) {
+        const neighbor = heights[y+face.n[1]]?.[x+face.n[0]] ?? 0;
+        for (let z=Math.floor(neighbor); z<h; z++) {
+          const bottom = Math.max(z,neighbor), top = Math.min(z+1,h);
+          if (top-bottom < .00001) continue;
+          const points = face.p.map(([px,py,pz]) => [x+px,y+py,pz ? top : bottom]);
+          result.push({points,x,y,view:face.view,top,depth:dot(interpolate(points[0],points[2],.5),eye)});
+        }
+      }
+    }
+  }
+  return result.sort((a,b) => a.depth-b.depth);
+}
+
+function codedText(project,point,text,color = "#52647b",size = 12) {
+  const [x,y] = project(point);
+  ctx.save();
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = color;
+  ctx.fillText(text,x,y);
+  ctx.restore();
+}
+
+function drawCodedFloor(project) {
+  const [sx,sy] = codedCell;
+  for (let y=2; y>=0; y--) for (let x=2; x>=0; x--) {
+    const empty = exercises[exercise][y][x] === 0;
+    const active = x===sx && y===sy;
+    if (empty && step>=3 && (!active || step===6)) continue;
+    const points = [[x,y,0],[x+1,y,0],[x+1,y+1,0],[x,y+1,0]].map(project);
+    ctx.save();
+    polygonPath(ctx,points);
+    ctx.fillStyle = active ? "#e4d7f6" : empty ? "#f4f6fa" : "#e0eee9";
+    ctx.fill();
+    ctx.strokeStyle = active ? "#7950b3" : empty ? "#a9b5c3" : "#8faea5";
+    ctx.lineWidth = active ? 2.6 : 1;
+    if (empty) ctx.setLineDash([4,3]);
+    ctx.stroke();
+    ctx.restore();
+    if (empty || step === 0) codedText(project,[x+.5,y+.5,.02],empty ? "0" : codedName(x,y),"#475469",12);
+  }
+  for (let x=0; x<3; x++) codedText(project,[x+.5,-.18,0],"ABC"[x],colors.front,11);
+  for (let y=0; y<3; y++) codedText(project,[-.2,y+.5,0],String(y+1),"#53667d",11);
+}
+
+function drawCodedCubes(project, eye, heights, clean, gridAlpha = 1) {
+  const visible = codedVisibleFaces(heights,eye);
+  for (const face of visible) {
+    polygonPath(ctx,face.points.map(project));
+    ctx.fillStyle = faceFills[face.view];
+    ctx.fill();
+    if (clean) {
+      ctx.strokeStyle = faceFills[face.view];
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    if (!clean) {
+      ctx.strokeStyle = face.x===codedCell[0] && face.y===codedCell[1] ? "#7950b3" : "#3c5976";
+      ctx.lineWidth = face.x===codedCell[0] && face.y===codedCell[1] ? 2.5 : 1;
+      ctx.stroke();
+    }
+  }
+  if (clean) {
+    ctx.save();
+    ctx.globalAlpha = gridAlpha;
+    drawSegments(visible.flatMap(face => polygonEdges(face.points).map(edge => edge.map(project))),"#58748c",1);
+    ctx.restore();
+    const edges = projectedFaces(exercise,eye).flatMap(face => face.edges.map(edge => edge.map(project)));
+    drawSegments(edges,colors.edge,2.5);
+  }
+}
+
+function drawCodedLesson(project, eye, now) {
+  if (step === 1 || step === 2) {
+    const {width,height} = canvas.getBoundingClientRect();
+    drawCodedReading(width,height);
+    drawingStart = null;
+    return;
+  }
+  const duration = step === 3 ? 2100 : step === 6 ? 1400 : 1650;
+  const t = drawingStart === null ? 1 : progress(now,drawingStart,duration);
+  const heights = codedHeights(exercise,step,ease(t));
+  drawCodedFloor(project);
+  if (step >= 3) drawCodedCubes(project,eye,heights,step===6,1-ease(t));
+  if (t === 1) drawingStart = null;
+  if (drawingStart !== null) schedule();
 }
 
 function drawBlockModel(project, visibleFaces, straight) {
@@ -1613,8 +2290,10 @@ canvas.addEventListener("keydown", event => {
   camera[1] = Math.max(-Math.PI/3,Math.min(Math.PI/2,camera[1]+move[1]));
   schedule();
 });
-new ResizeObserver(schedule).observe(canvas);
+new ResizeObserver(() => schedule(true)).observe(canvas);
+setupCodedPlan();
 setStep(0);
 </script>
 </body>
 </html>
+
